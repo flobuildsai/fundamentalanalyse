@@ -1,0 +1,28 @@
+Du baust das BACKEND für die DeltaValue-Web-App. Arbeite autonom bis fertig.
+
+ZUERST LESEN (in dieser Reihenfolge):
+1. docs/CODEX_BRIEFING.md   — dein vollständiger Auftrag, Definition of Done
+2. docs/IMPLEMENTATION_PLAN.md §4 — der eingefrorene API-Vertrag
+3. docs/valuation-spec.ts + docs/valuation-spec.test.ts — die getestete Engine-Referenz, 1:1 nach Python portieren
+4. frontend/src/types/analysis.ts und frontend/src/mocks/alcoa.json — exakte Zielform der JSON-Antwort
+
+AUFTRAG (Kurzform, Details im Briefing):
+- Lege alles unter backend/ an. Python venv in backend/.venv.
+- FastAPI-App mit GET /api/analyze/{ticker} -> liefert exakt das Analysis-JSON aus dem Vertrag.
+- Bewertungs-Engine 1:1 aus valuation-spec.ts nach Python (valuation.py).
+- FinancialDataProvider-Interface: YahooProvider (yfinance, Default, kein Key) + FmpProvider (httpx, FMP_API_KEY). Umschaltbar per Env DATA_PROVIDER=yahoo|fmp.
+- Felder, die der Provider nicht liefert (z.B. ROIC/WACC bei Yahoo): null zurückgeben, NICHT raten.
+- CORS für http://localhost:5173 und http://localhost:4173. Server auf Port 8000.
+- Fehlerfälle: 404 {"error":"ticker_not_found","ticker":...}, 502 {"error":"provider_unavailable"}, 429 {"error":"rate_limited"}.
+
+DEFINITION OF DONE (alles erfüllen):
+- pytest grün, inkl. Engine-Tests, die diese Alcoa-Werte exakt treffen:
+  futureEPS=14.1908, futurePrice=374.0693, intrinsicValue=92.4642, difference=0.4149,
+  MoS-Stufen 46.23/55.48/64.72/73.97/83.22 (Annahmen requiredReturn=0.15, estimatedGrowth=0.125, currentEPS=4.37, historicalPE=26.36, currentPrice=54.1).
+- Server startet und GET /api/analyze/AAPL liefert validen Analysis-Body mit Live-Daten (yfinance).
+- Antwort strukturell identisch zu frontend/src/mocks/alcoa.json (gleiche Felder/Typen).
+- Schreibe backend/README.md mit Start-Anleitung (venv aktivieren, uvicorn-Startbefehl, Env-Variablen).
+
+NICHT ANFASSEN: alles unter frontend/ und den API-Vertrag (types/analysis.ts, §4) NICHT einseitig ändern.
+
+Wenn pytest grün ist und /api/analyze/AAPL ein valides Ergebnis liefert, bist du fertig. Fasse am Ende kurz zusammen, was du gebaut hast und wie man den Server startet.

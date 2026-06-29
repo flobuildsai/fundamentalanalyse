@@ -1,0 +1,40 @@
+RUNDE 3 — KRITISCHER FIX am FmpProvider in backend/app/providers.py. Arbeite autonom bis fertig.
+
+PROBLEM: FMP hat zum 31.08.2025 die alten /api/v3/-Endpoints abgeschaltet (HTTP 403 "Legacy Endpoint"). Der aktuelle FmpProvider nutzt base_url "https://financialmodelingprep.com/api/v3" und alte Feldnamen — das funktioniert mit aktuellen API-Keys NICHT mehr. Umstellen auf die NEUE "stable"-API.
+
+ICH HABE DIE NEUE API MIT ECHTEM KEY VERIFIZIERT. Nutze exakt diese Fakten:
+
+NEUE BASE-URL: https://financialmodelingprep.com/stable
+NEUES QUERY-FORMAT: Symbol als Query-Param, nicht im Pfad. Beispiele (alle mit &apikey=...):
+  /stable/quote?symbol=AAPL
+  /stable/profile?symbol=AAPL
+  /stable/income-statement?symbol=AAPL&period=annual&limit=11
+  /stable/balance-sheet-statement?symbol=AAPL&period=annual&limit=11
+  /stable/cash-flow-statement?symbol=AAPL&period=annual&limit=11
+  /stable/ratios?symbol=AAPL&period=annual&limit=11
+  /stable/key-metrics?symbol=AAPL&period=annual&limit=11
+(Alte Form war /api/v3/income-statement/AAPL?... — Symbol im Pfad. Das ist weg.)
+
+GEÄNDERTE FELDNAMEN (alt -> NEU), die im Mapping angepasst werden MÜSSEN:
+  ROIC:              "roic"                 -> "returnOnInvestedCapital"   (in /stable/key-metrics)
+  PE-Ratio:          "priceEarningsRatio"   -> "priceToEarningsRatio"      (in /stable/ratios)
+  Interest Coverage: "interestCoverage"     -> "interestCoverageRatio"     (in /stable/ratios)
+  Payout Ratio:      "payoutRatio"          -> "dividendPayoutRatio"       (in /stable/ratios)
+  BVPS:              "bookValuePerShare"    -> "shareholdersEquityPerShare" (in /stable/key-metrics ODER ratios; prüfe beide, nimm vorhandenes)
+ROE: in /stable/ratios heißt es ggf. "returnOnEquity" — falls nicht vorhanden, computed-Fallback NI/Equity behalten.
+WACC-Inputs unverändert (income-statement: interestExpense, incomeTaxExpense bzw. taxRate; balance-sheet: totalDebt/longTermDebt + totalStockholdersEquity; quote: marketCap; profile: beta). Feldnamen in income/balance/cashflow sind in der stable-API weitgehend gleich geblieben (revenue, netIncome, epsdiluted bzw. eps, operatingCashFlow, freeCashFlow, capitalExpenditure, weightedAverageShsOutDil, longTermDebt, totalStockholdersEquity, cashAndShortTermInvestments, interestExpense, incomeTaxExpense) — falls ein Feldname abweicht, defensiv mit .get() und Fallback auf None behandeln, niemals KeyError.
+
+WICHTIG:
+- base_url default auf "https://financialmodelingprep.com/stable" ändern.
+- Alle Request-Helfer von Pfad-Symbol auf Query-Symbol umstellen (params={"symbol": ticker, "period": "annual", "limit": 11, "apikey": key}).
+- 403 mit "Legacy Endpoint" ODER 401/Invalid API key -> ProviderUnavailable (nicht als ticker_not_found). Leeres Array [] -> TickerNotFound. 429 -> RateLimited.
+- Provenance-Logik unverändert lassen, nur Feld-Lookups anpassen.
+
+DEFINITION OF DONE:
+- Bestehende Tests bleiben grün (passe gemockte FMP-Responses in tests/test_providers.py an die neue stable-Struktur + neue Feldnamen an, weiterhin KEINE echten API-Calls).
+- Neuer/angepasster Test: ROIC wird aus "returnOnInvestedCapital" gelesen, interestCoverage aus "interestCoverageRatio", PE aus "priceToEarningsRatio".
+- python3 -m pytest -> alle grün.
+
+NICHT ANFASSEN: frontend/, valuation.py-Engine-Logik, die Alcoa-Sollwerte, backend/.env (enthält echten Key!).
+
+Fasse am Ende zusammen welche Endpoints/Feldnamen du umgestellt hast.

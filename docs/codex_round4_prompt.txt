@@ -1,0 +1,22 @@
+RUNDE 4 — zwei gezielte Fixes am FmpProvider in backend/app/providers.py. Autonom bis fertig.
+
+=== FIX 1 (KRITISCH): Sequenzielle statt parallele FMP-Requests ===
+PROBLEM verifiziert: Der FmpProvider feuert seine ~7 Endpoint-Requests parallel via asyncio.gather ab. Der FMP-Tarif dieses Keys drosselt parallele Bursts: die ersten 1-2 Requests bekommen HTTP 200, die restlichen HTTP 402 "Payment Required". Einzeln/sequenziell geben ALLE Endpoints 200 zurück. Es ist KEIN fehlendes Abo — nur Rate-Limiting bei Parallelität.
+
+LÖSUNG: In get_fundamentals die parallele Sammlung der Endpoints (quote, profile, income-statement, balance-sheet-statement, cash-flow-statement, ratios, key-metrics) auf SEQUENZIELL umstellen — eine Anfrage nach der anderen (await nacheinander, KEIN asyncio.gather für die FMP-Endpoints). Füge zwischen den Requests eine kleine konfigurierbare Pause ein: Env FMP_REQUEST_DELAY_MS (default 250). 
+Zusätzlich: bei HTTP 402 ODER 429 auf einem Endpoint einen einfachen Retry mit Backoff (z.B. bis zu 3 Versuche, Wartezeit 0.5s, 1s, 2s) bevor aufgegeben wird — weil 402 hier transientes Rate-Limit ist, kein echtes Payment-Problem. Erst wenn auch nach Retries 402/429 bleibt -> RateLimited (nicht ProviderUnavailable). 
+WICHTIG: Yahoo-Provider und Engine NICHT anfassen. Die Reihenfolge/Logik des Mappings bleibt; nur die Art wie die rohen Endpoint-JSONs geholt werden ändert sich (sequenziell + retry).
+
+=== FIX 2 (SICHERHEIT): API-Key niemals in Fehlermeldungen/Logs ===
+PROBLEM: Bei Fehlern wird die volle Request-URL inkl. ?apikey=<KEY> in Exceptions/Logs ausgegeben — der Key leakt. 
+LÖSUNG: Eine Hilfsfunktion _redact(text) die jeden Vorkommnis des API-Keys sowie das Muster apikey=... durch apikey=*** ersetzt. ALLE Exception-Messages (ProviderUnavailable/RateLimited/TickerNotFound) und etwaige Logs durch _redact() leiten. Niemals den rohen httpx-Fehler mit URL ungefiltert weiterreichen. Teste das: ein Test der einen 500er mockt und prüft dass der Key NICHT im Exception-String steht.
+
+DEFINITION OF DONE:
+- python3 -m pytest aus dem Repo-Root -> alle grün (bestehende + neue).
+- Neuer Test FIX1: mock dass die ersten parallelen Calls 402 geben aber sequenziell mit retry 200 — prüfe dass get_fundamentals erfolgreich durchläuft. (Mit httpx.MockTransport, KEINE echten Calls.)
+- Neuer Test FIX2: Key kommt in keiner Exception-Message vor.
+- Bestehende 20 Tests bleiben grün.
+
+NICHT ANFASSEN: frontend/, valuation.py-Engine, Alcoa-Sollwerte, backend/.env (echter Key!).
+
+Fasse am Ende kurz zusammen was du an der Request-Strategie geändert hast.

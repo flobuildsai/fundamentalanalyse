@@ -1,0 +1,39 @@
+RUNDE 2 — Erweiterung des bestehenden Backends unter backend/. Das Grundgerüst steht und 12 Tests sind grün; NICHT neu bauen, nur erweitern. Arbeite autonom bis fertig.
+
+ZUERST LESEN:
+- docs/DATA_MAPPING.md  — KOMPLETT, besonders Abschnitt "ENTSCHEIDUNG: Fehlende Felder + Kennzeichnung (verbindlich)" und die FMP-Endpoint-Liste.
+- backend/app/providers.py, backend/app/schemas.py, backend/app/service.py — der aktuelle Stand.
+
+ZWEI AUFGABEN:
+
+=== AUFGABE 1: FMP-Provider vollständig nach DATA_MAPPING umsetzen ===
+Der FmpProvider muss ALLE Felder des Analysis-Vertrags füllen, mit echten FMP-Endpoints (Liste am Ende von DATA_MAPPING.md). Insbesondere die Felder, die Yahoo NICHT liefert:
+- profitability.roic   → /key-metrics → roic  (reported)
+- profitability.roe    → /ratios → returnOnEquity (reported), sonst NI/Equity (computed)
+- profitability.wacc   → FMP liefert NICHT fertig → SELBST per CAPM berechnen (computed), Formel in DATA_MAPPING. Inputs: beta (/profile), interestExpense + incomeTaxExpense (/income-statement), totalDebt + equity (/balance-sheet), marketCap (/quote). riskFree und marketPremium als Env-Konstanten (RISK_FREE_RATE default 0.043, MARKET_PREMIUM default 0.05). Wenn ein Input fehlt → wacc=null.
+- debt.interestCoverage → /ratios → interestCoverage (reported)
+- growth.bookValuePerShare → /key-metrics bookValuePerShare (reported), sonst equity/shares (computed)
+- growth.fcf → /cash-flow-statement freeCashFlow (reported), sonst OpCF-CapEx (computed)
+- historicalPE → Median der jährlichen PE (/ratios priceEarningsRatio), Jahre mit negativem EPS ausschließen
+Jahresreihen aufsteigend, 10 Jahre + TTM, period=annual&limit=11. FMP-Key aus Env FMP_API_KEY. httpx mit Timeout + sauberer Fehlerbehandlung (kein Key / Ticker unbekannt → die definierten Fehlerantworten).
+
+=== AUFGABE 2: Provenance-Kennzeichnung (verbindlich aus DATA_MAPPING) ===
+Erweitere das Analysis-Schema ADDITIV um zwei optionale Felder:
+- "dataSource": "fmp" | "yahoo"  — welche Primärquelle aktiv war
+- "provenance": dict[str, "reported"|"computed"|"estimated"|"unavailable"] — Schlüssel = Feldpfad (z.B. "profitability.wacc"), siehe DATA_MAPPING-Tabelle.
+Regeln: direkt vom Provider = reported; von uns aus Rohdaten berechnet = computed; Schätzung/Annahme = estimated; null weil nicht lieferbar/berechenbar = unavailable. Felder ohne Eintrag gelten als reported. Beide Felder optional → bestehender Vertrag + Frontend-Mock bleiben gültig.
+Jeder Provider füllt provenance für die Felder, die er berechnet/schätzt/nicht hat. Yahoo: ROIC/WACC/interestCoverage → unavailable; FCF (OpCF-CapEx) und ROE (NI/Equity) → computed wo nötig.
+
+WICHTIG zu valueCreating: nur true/false setzen wenn BEIDE (ROIC und WACC letztes Jahr) vorhanden sind; wenn eines null → valueCreating = null (Schema entsprechend Optional machen) und provenance "valueCreating"=unavailable. (Bei Yahoo also null statt irreführend false.)
+
+DEFINITION OF DONE:
+- Bestehende 12 Tests bleiben grün.
+- Neue Tests: FmpProvider-Mapping mit gemockten FMP-Responses (KEINE echten API-Calls im Test) — prüfe dass roic/wacc/interestCoverage gefüllt und provenance korrekt gesetzt ist; WACC-Berechnung mit bekannten Inputs gegen handgerechneten Wert.
+- Yahoo-Pfad: ROIC/WACC bleiben null mit provenance "unavailable", valueCreating null.
+- backend/.env.example mit FMP_API_KEY=, DATA_PROVIDER=fmp, RISK_FREE_RATE=0.043, MARKET_PREMIUM=0.05.
+- README aktualisiert (FMP aktivieren, Env-Variablen, WACC-Konstanten).
+- mypy/ruff sauber falls konfiguriert.
+
+NICHT ANFASSEN: frontend/, die bestehende Engine-Logik in valuation.py (nur falls valueCreating-Anpassung nötig), die getesteten Alcoa-Sollwerte.
+
+Fasse am Ende zusammen: welche Felder jetzt von FMP kommen (reported/computed), wie WACC gerechnet wird, und wie man FMP aktiviert.

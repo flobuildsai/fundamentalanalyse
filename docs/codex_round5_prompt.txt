@@ -1,0 +1,30 @@
+RUNDE 5 — Caching + Rate-Limit-robustheit fürs Backend. Autonom bis fertig.
+
+KONTEXT: Der FmpProvider zieht 7 Endpoints pro Ticker. Der FMP-Tarif dieses Keys hat ein enges Rate-Limit (wenige Calls/Minute). Verifiziert: mit ~3s Abstand zwischen Calls gehen alle 7 durch (7/7), schneller -> HTTP 402/429 auf den späteren Calls. Wir lösen das mit Caching + sicheren Pausen, NICHT durch noch mehr Retries.
+
+=== AUFGABE 1: Response-Cache pro Ticker ===
+Cache die FERTIGE Analysis (bzw. die rohen RawFinancials) pro (provider, ticker) in einem einfachen In-Memory-TTL-Cache (dict + Zeitstempel, asyncio-safe mit einem Lock). 
+- TTL aus Env CACHE_TTL_SECONDS (default 1800 = 30 Min).
+- Bei Cache-Hit: KEINE FMP-Calls, sofort aus Cache liefern.
+- WICHTIG für Slider: Die Annahmen (requiredReturn/estimatedGrowth) dürfen NICHT Teil des Cache-Keys sein — cache die provider-Rohdaten/Fundamentaldaten, und rechne die valuation bei jedem Request frisch mit den aktuellen Annahmen aus dem Cache. So sind Slider-Bewegungen sofort (kein FMP-Call) aber respektieren die Annahmen.
+  Konkret: Cache-Ebene = RawFinancials (provider-Output) pro (provider,ticker). build_analysis(raw, assumptions) läuft pro Request frisch.
+- Concurrency: wenn zwei Requests denselben ticker gleichzeitig anfragen während er lädt, soll nur EIN FMP-Fetch laufen (per-ticker Lock / in-flight future), der andere wartet auf dasselbe Ergebnis. (Single-flight.)
+
+=== AUFGABE 2: Sichere sequenzielle Pausen + sinnvolle Retries ===
+- FMP_REQUEST_DELAY_MS default von 250 auf 3000 erhöhen (3s zwischen den 7 Endpoints).
+- Bei 402/429 auf einem Endpoint: Backoff-Retry verlängern auf z.B. [3s, 6s, 12s] (statt 0.5/1/2), max 3 Versuche. httpx-Timeout pro Request auf 30s erhöhen.
+- Gesamt-Timeout des Endpoints großzügig: der erste Load eines Tickers darf 20-30s dauern. Stelle sicher dass die FastAPI-Route nicht vorher abbricht.
+
+=== AUFGABE 3: Schnelle Wiederholung sichtbar machen ===
+- Füge der Analysis-Antwort additiv ein optionales Feld "cached": bool hinzu (true wenn aus Cache, false bei frischem Fetch). Optional, bricht Vertrag nicht.
+
+DEFINITION OF DONE:
+- python3 -m pytest aus Repo-Root -> alle grün (bestehende 22 + neue).
+- Neuer Test: zweiter Request auf denselben Ticker macht KEINE neuen Provider-Calls (mock provider, call-counter == 1 nach 2 Requests).
+- Neuer Test: Slider/Annahmen-Änderung beim gecachten Ticker liefert andere valuation OHNE neuen Provider-Call.
+- Neuer Test: Single-flight — zwei gleichzeitige Requests = 1 Provider-Fetch.
+- Yahoo-Pfad weiterhin funktionsfähig (Cache gilt für beide Provider).
+
+NICHT ANFASSEN: frontend/, valuation.py-Engine-Mathematik, Alcoa-Sollwerte, backend/.env (echter Key!).
+
+Fasse am Ende zusammen: Cache-Strategie, TTL, wie Slider-Änderungen ohne neue Calls funktionieren.

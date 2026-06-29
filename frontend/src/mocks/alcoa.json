@@ -1,0 +1,129 @@
+{
+  "ticker": "AA",
+  "companyName": "Alcoa Corp",
+  "currency": "USD",
+  "asOf": "2026-06-28T16:00:00Z",
+  "currentPrice": 54.1,
+  "currentPE": 12.38,
+  "historicalPE": 26.36,
+  "beta": 1.56,
+  "cached": false,
+  "growthEstimate": {
+    "source": "analyst",
+    "estimatedGrowth": 0.125,
+    "horizonYears": null,
+    "forwardEPS": null,
+    "detail": "Keine belastbare Analysten-EPS-Schätzung verfügbar; Annahme bleibt editierbar."
+  },
+  "growth": {
+    "revenue": { "y10": 0.0137, "y7": -0.0062, "y5": 0.0668, "y3": 0.0101, "y1": 0.0787 },
+    "eps": { "y10": "neg.", "y7": 0.1852, "y5": "neg.", "y3": "neg.", "y1": 0.6731 },
+    "fcf": { "y10": 0.016, "y7": 0.419, "y5": 0.691, "y3": 0.184, "y1": 0.901 },
+    "bookValuePerShare": { "y10": -0.0769, "y7": -0.0376, "y5": 0.0549, "y3": -0.0676, "y1": 0.165 },
+    "sharesOutstanding": { "y10": 0.0373, "y7": 0.0518, "y5": 0.0718, "y3": 0.1413, "y1": 0.0184 },
+    "operatingCashflow": { "y10": 0.0308, "y7": 0.1491, "y5": 0.2464, "y3": 0.1297, "y1": 0.9051 }
+  },
+  "profitability": {
+    "netIncome": { "y10": -29.4, "y7": -60.43, "y5": 174.4, "y3": 188.67, "y1": 1157 },
+    "roic": { "y10": 0.0361, "y7": 0.0286, "y5": 0.0284, "y3": 0.0171, "y1": 0.065 },
+    "roe": { "y10": -0.0065, "y7": -0.0166, "y5": 0.0321, "y3": 0.0261, "y1": 0.2052 },
+    "wacc": { "y10": 0.12, "y7": 0.1331, "y5": 0.1454, "y3": 0.1339, "y1": 0.1324 }
+  },
+  "margins": {
+    "grossMargin": { "y10": null, "y7": null, "y5": null, "y3": null, "y1": null },
+    "operatingMargin": { "y10": null, "y7": null, "y5": null, "y3": null, "y1": null },
+    "netMargin": { "y10": -0.0068, "y7": -0.0096, "y5": 0.0118, "y3": 0.0112, "y1": 0.0902 },
+    "fcfMargin": { "y10": 0.0108, "y7": 0.0158, "y5": 0.0154, "y3": 0.002, "y1": 0.0442 }
+  },
+  "valueCreating": false,
+  "debt": {
+    "longTermDebt": { "y10": 1904.7, "y7": 2062, "y5": 2034.4, "y3": 2213.33, "y1": 2438 },
+    "debtToFcf": 8.01,
+    "interestCoverage": 4.8
+  },
+  "balance": {
+    "totalDebt": { "y10": 1904.7, "y7": 2062, "y5": 2034.4, "y3": 2213.33, "y1": 2438 },
+    "cashAndInvestments": { "y10": null, "y7": null, "y5": null, "y3": null, "y1": null },
+    "netDebt": { "y10": null, "y7": null, "y5": null, "y3": null, "y1": null },
+    "totalEquity": { "y10": null, "y7": null, "y5": null, "y3": null, "y1": null },
+    "debtToEquity": null,
+    "cashPerShare": null
+  },
+  "dividend": {
+    "dividend": { "y10": 0.17, "y7": 0.2429, "y5": 0.34, "y3": 0.4, "y1": 0.4 },
+    "yield": 0.0074,
+    "payoutRatio": { "y10": 0.0833, "y7": 0.125, "y5": 0.125, "y3": 0.201, "y1": 0.106 }
+  },
+  "series": {
+    "years": [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+    "revenue": [11199, 9318, 11652, 13403, 10433, 9286, 12152, 12451, 10551, 11895, 12831],
+    "eps": [-4.731, -2.19, 1.49, 1.33, -6.07, -0.91, 2.26, -0.68, -3.65, 0.26, 4.37],
+    "fcf": [484, -715, 819, 49, 307, 41, 530, 342, -440, 42, 567],
+    "netIncome": [-863, -400, 279, 250, -1125, -170, 429, -123, -651, 60, 1157]
+  },
+  "assumptions": { "requiredReturn": 0.15, "estimatedGrowth": 0.125, "growthSource": "analyst" },
+  "valuation": {
+    "currentEPS": 0.512,
+    "estimatedGrowth": 0.125,
+    "historicalPE": 18,
+    "futureEPS": 1.6626,
+    "futurePrice": 29.9273,
+    "intrinsicValue": 7.3976,
+    "currentPrice": 54.1,
+    "difference": -6.3132,
+    "marginOfSafety": [
+      { "discount": 0.5, "price": 3.6988 },
+      { "discount": 0.4, "price": 4.4385 },
+      { "discount": 0.3, "price": 5.1783 },
+      { "discount": 0.2, "price": 5.9181 },
+      { "discount": 0.1, "price": 6.6578 }
+    ],
+    "guardrails": {
+      "confidence": "medium",
+      "isCyclical": true,
+      "epsBasis": "normalized",
+      "peBasis": "cyclical_cap",
+      "normalizedEPS": 0.512,
+      "normalizedFcfPerShare": null,
+      "rawHistoricalPE": 26.36,
+      "effectivePE": 18,
+      "warnings": [
+        {
+          "code": "cyclical_earnings",
+          "severity": "warning",
+          "title": "Zyklische Gewinne",
+          "detail": "Mehrere Verlustjahre oder ein auffälliges Peak-EPS wurden erkannt."
+        },
+        {
+          "code": "normalized_eps_used",
+          "severity": "info",
+          "title": "Normalisiertes EPS verwendet",
+          "detail": "Die Bewertung nutzt ein geglättetes EPS statt des letzten Jahreswerts."
+        },
+        {
+          "code": "cyclical_pe_cap",
+          "severity": "warning",
+          "title": "Zykliker-KGV gedeckelt",
+          "detail": "Bei zyklischen Gewinnen wird kein hohes historisches Multiple blind übernommen."
+        }
+      ]
+    }
+  },
+  "decision": {
+    "rating": "avoid",
+    "label": "Meiden",
+    "score": 4,
+    "summary": "Die Kombination aus Bewertung, Qualität oder Bilanz ist aktuell unattraktiv.",
+    "valuationSignal": "weak",
+    "qualitySignal": "unknown",
+    "debtSignal": "unknown",
+    "dataSignal": "ok",
+    "reasons": [
+      "Aktueller Kurs liegt klar über dem berechneten inneren Wert.",
+      "ROIC/WACC fehlen, Qualitätsurteil bleibt eingeschränkt.",
+      "Schuldentragfähigkeit ist nicht vollständig belegt.",
+      "Yahoo-Fallback liefert weniger belastbare Detaildaten als FMP.",
+      "Zyklische Gewinne reduzieren die Aussagekraft der Multiple-Bewertung."
+    ]
+  }
+}
