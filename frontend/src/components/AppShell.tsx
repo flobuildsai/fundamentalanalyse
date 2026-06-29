@@ -11,29 +11,139 @@ interface AppShellProps {
   children: ReactNode;
 }
 
-const NAV_ITEMS: Array<{ route: AppRoute; label: string }> = [
-  { route: "analysis", label: "Analyse" },
-  { route: "screener", label: "Screener" },
-  { route: "regime", label: "Regime" },
-  { route: "setups", label: "Setups" },
-  { route: "portfolio", label: "Portfolio" },
-  { route: "options", label: "Optionen" },
-  { route: "watchlist", label: "Watchlist" },
+const TRACK_ITEMS: Array<{ route: AppRoute; label: string; icon: ReactNode }> = [
+  { route: "analysis", label: "Home", icon: <HomeIcon /> },
+  { route: "screener", label: "Screener", icon: <ChartIcon /> },
+  { route: "regime", label: "Risk", icon: <PieIcon /> },
+  { route: "setups", label: "Setups", icon: <BinocularsIcon /> },
+  { route: "portfolio", label: "Portfolio", icon: <BarsIcon /> },
 ];
+
+const SERVICE_ITEMS: Array<{ route: AppRoute; label: string; icon: ReactNode }> = [
+  { route: "options", label: "Options", icon: <TrendIcon /> },
+  { route: "watchlist", label: "Watchlist", icon: <ListIcon /> },
+];
+
+function IconFrame({ children }: { children: ReactNode }) {
+  return (
+    <svg className="origin-nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+      {children}
+    </svg>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <IconFrame>
+      <path d="M4 10.5 12 4l8 6.5V20h-5v-6H9v6H4z" />
+    </IconFrame>
+  );
+}
+
+function ChartIcon() {
+  return (
+    <IconFrame>
+      <path d="M4 19h16M6 16V9m6 7V5m6 11v-5" />
+    </IconFrame>
+  );
+}
+
+function PieIcon() {
+  return (
+    <IconFrame>
+      <path d="M12 4v8l7-3.5A8 8 0 1 1 12 4z" />
+      <path d="M12 12h8" />
+    </IconFrame>
+  );
+}
+
+function BinocularsIcon() {
+  return (
+    <IconFrame>
+      <path d="M6 9h4v9H5a3 3 0 0 1-3-3v-2a4 4 0 0 1 4-4zm8 0h4a4 4 0 0 1 4 4v2a3 3 0 0 1-3 3h-5z" />
+      <path d="M10 9V6h4v3" />
+    </IconFrame>
+  );
+}
+
+function BarsIcon() {
+  return (
+    <IconFrame>
+      <path d="M5 20V10m7 10V4m7 16v-7" />
+      <path d="M3 20h18" />
+    </IconFrame>
+  );
+}
+
+function TrendIcon() {
+  return (
+    <IconFrame>
+      <path d="m4 16 5-5 4 4 7-8" />
+      <path d="M15 7h5v5" />
+    </IconFrame>
+  );
+}
+
+function ListIcon() {
+  return (
+    <IconFrame>
+      <path d="M7 6h13M7 12h13M7 18h13" />
+      <path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
+    </IconFrame>
+  );
+}
 
 function LogoMark() {
   return (
-    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
-      <svg viewBox="0 0 64 64" className="h-5 w-5" aria-hidden="true">
-        <path
-          d="M32 16 L48 46 H16 Z"
-          fill="none"
-          stroke="#fff"
-          strokeWidth="5"
-          strokeLinejoin="round"
-        />
-      </svg>
+    <div className="origin-logo-mark" aria-hidden="true">
+      <span />
+      <span />
+      <span />
+      <span />
     </div>
+  );
+}
+
+function NavGroup({
+  title,
+  items,
+  activeRoute,
+  onNavigate,
+}: {
+  title: string;
+  items: Array<{ route: AppRoute; label: string; icon: ReactNode }>;
+  activeRoute: AppRoute;
+  onNavigate: (route: AppRoute) => void;
+}) {
+  return (
+    <div className="origin-nav-group">
+      <p>{title}</p>
+      <div className="origin-nav-list">
+        {items.map((item) => {
+          const active = item.route === activeRoute;
+          return (
+            <button
+              key={item.route}
+              type="button"
+              onClick={() => onNavigate(item.route)}
+              aria-current={active ? "page" : undefined}
+              className={active ? "active" : undefined}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TopAction({ label, children, primary = false }: { label: string; children: ReactNode; primary?: boolean }) {
+  return (
+    <button type="button" className={`origin-top-action ${primary ? "primary" : ""}`} aria-label={label}>
+      {children}
+    </button>
   );
 }
 
@@ -46,62 +156,38 @@ export function AppShell({
   children,
 }: AppShellProps) {
   return (
-    <div className="min-h-[100dvh] px-3 py-4 sm:px-5">
-      <header className="sticky top-4 z-20 mx-auto max-w-[1280px]">
-        <nav className="glass-strong flex flex-wrap items-center gap-2 rounded-[var(--radius-pill)] px-2.5 py-2 sm:gap-3 sm:px-4">
-          <button
-            type="button"
-            onClick={onHome}
-            className="flex items-center gap-2 rounded-[var(--radius-pill)] pr-2 text-left"
-            aria-label="Startseite öffnen"
-          >
-            <LogoMark />
-            <span className="hidden shrink-0 whitespace-nowrap text-sm font-semibold text-[var(--color-ink)] sm:inline-flex">
-              Fundamental-Analyst
-            </span>
-          </button>
+    <div className="origin-app-shell">
+      <aside className="origin-sidebar">
+        <button type="button" onClick={onHome} className="origin-brand" aria-label="Startseite öffnen">
+          <LogoMark />
+          <span>DeltaValue</span>
+        </button>
 
-          <div className="order-3 flex w-full gap-1 overflow-x-auto rounded-[var(--radius-pill)] bg-white/38 p-1 ring-1 ring-white/58 md:order-none md:w-auto md:overflow-visible">
-            {NAV_ITEMS.map((item) => {
-              const active = item.route === activeRoute;
-              return (
-                <button
-                  key={item.route}
-                  type="button"
-                  onClick={() => onNavigate(item.route)}
-                  aria-current={active ? "page" : undefined}
-                  className={`premium-transition shrink-0 rounded-[var(--radius-pill)] px-3 py-1.5 text-xs font-semibold ${
-                    active
-                      ? "bg-[var(--color-ink)] text-[var(--color-paper)] shadow-[0_8px_20px_rgba(25,22,15,0.16)]"
-                      : "text-[var(--color-ink-secondary)] hover:bg-white/72 hover:text-[var(--color-ink)]"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
+        <NavGroup title="Research" items={TRACK_ITEMS} activeRoute={activeRoute} onNavigate={onNavigate} />
+        <NavGroup title="Tools" items={SERVICE_ITEMS} activeRoute={activeRoute} onNavigate={onNavigate} />
+
+        <button type="button" className="origin-ai-button">
+          <span>✦</span>
+          <span>Ask anything</span>
+        </button>
+      </aside>
+
+      <div className="origin-workspace">
+        <header className="origin-topbar">
+          <h1>Good afternoon</h1>
+          <div className="origin-topbar-actions">
+            {mockBadge && <span className="origin-pill">Demo</span>}
+            <div className="origin-sync-control">{syncControls}</div>
+            <TopAction label="Rewards" primary>🎁</TopAction>
+            <TopAction label="Account">♙</TopAction>
+            <TopAction label="Add">＋</TopAction>
+            <TopAction label="Help">?</TopAction>
+            <TopAction label="Settings">⚙</TopAction>
           </div>
+        </header>
 
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onHome}
-              className="premium-transition hidden rounded-[var(--radius-pill)] bg-white/48 px-3 py-1 text-xs font-semibold text-[var(--color-ink-secondary)] ring-1 ring-white/60 hover:bg-white/78 lg:inline-flex"
-            >
-              Startseite
-            </button>
-            {syncControls}
-            {mockBadge && (
-              <span className="whitespace-nowrap rounded-[var(--radius-pill)] bg-[var(--color-amber)]/15 px-2.5 py-1 text-xs font-semibold text-[var(--color-amber)]">
-                <span className="hidden sm:inline">Demo-Daten</span>
-                <span className="sm:hidden">Demo</span>
-              </span>
-            )}
-          </div>
-        </nav>
-      </header>
-
-      <main className="mx-auto max-w-[1280px] pb-24 pt-10 sm:pt-12">{children}</main>
+        <main className="origin-main">{children}</main>
+      </div>
     </div>
   );
 }
