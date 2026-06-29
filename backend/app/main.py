@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -13,6 +13,18 @@ from app.providers import (
     RateLimited,
     TickerNotFound,
     create_provider,
+)
+from app.options.calculations import OptionTradeInput, calculate_option_trade
+from app.options.schemas import OptionTradeRequest, OptionTradeResponse
+from app.portfolio.calculations import (
+    PortfolioPosition,
+    PortfolioSettings,
+    calculate_portfolio_summary,
+)
+from app.portfolio.schemas import (
+    ExposureBucketPayload,
+    PortfolioSummaryPayload,
+    PortfolioSummaryRequest,
 )
 from app.screener.service import ScreenerService, ScreenerServiceProtocol
 from app.service import build_analysis, to_response_payload
@@ -29,7 +41,7 @@ app.add_middleware(
         r"http://(localhost|127\.0\.0\.1):\d+"
     ),
     allow_credentials=False,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -138,3 +150,103 @@ async def screen_sp500(
         sort=sort,
     )
     return response.model_dump(by_alias=True, mode="json")
+
+
+def _rounded(value: float, places: int = 10) -> float:
+    return round(float(value), places)
+
+
+@app.post("/api/portfolio/summary", response_model=None)
+async def portfolio_summary(request: PortfolioSummaryRequest) -> dict[str, object]:
+    """Calculate portfolio exposure and buying-power summary from native inputs."""
+
+    try:
+        settings = PortfolioSettings(
+            net_liquidation=request.settings.net_liquidation,
+            base_currency=request.settings.base_currency,
+            fx_to_usd=request.settings.fx_to_usd,
+            moderate_utilization=request.settings.moderate_utilization,
+            critical_utilization=request.settings.critical_utilization,
+        )
+        positions = [
+            PortfolioPosition(
+                symbol=position.symbol,
+                asset_class=position.asset_class,
+                strategy=position.strategy,
+                quantity=position.quantity,
+                price=position.price,
+                buying_power_used=position.buying_power_used,
+                counts_toward_buying_power=position.counts_toward_buying_power,
+            )
+            for position in request.positions
+        ]
+        summary = calculate_portfolio_summary(settings, positions)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    payload = PortfolioSummaryPayload(
+        net_liquidation_usd=_rounded(summary.net_liquidation_usd),
+        moderate_buying_power=_rounded(summary.moderate_buying_power),
+        critical_buying_power=_rounded(summary.critical_buying_power),
+        used_buying_power=_rounded(summary.used_buying_power),
+        remaining_moderate_buying_power=_rounded(summary.remaining_moderate_buying_power),
+        cash=_rounded(summary.cash),
+        asset_allocation={
+            key: ExposureBucketPayload(amount=_rounded(bucket.amount), weight=_rounded(bucket.weight))
+            for key, bucket in summary.asset_allocation.items()
+        },
+        underlying_exposure={
+            key: ExposureBucketPayload(amount=_rounded(bucket.amount), weight=_rounded(bucket.weight))
+            for key, bucket in summary.underlying_exposure.items()
+        },
+    )
+    return payload.model_dump(by_alias=True, mode="json")
+
+
+@app.post("/api/options/calculate", response_model=None)
+async def options_calculate(request: OptionTradeRequest) -> dict[str, object]:
+    """Calculate option setup metrics from native inputs."""
+
+    try:
+        metrics = calculate_option_trade(
+            OptionTradeInput(
+                strategy_kind=request.strategy_kind,
+                underlying=request.underlying,
+                opened_at=request.opened_at,
+                expiry=request.expiry,
+                underlying_price=request.underlying_price,
+                short_strike=request.short_strike,
+                premium=request.premium,
+                fees=request.fees,
+                long_strike=request.long_strike,
+                contracts=request.contracts,
+                multiplier=request.multiplier,
+                buyback_target_pct=request.buyback_target_pct,
+                closed_at=request.closed_at,
+                actual_buyback_price=request.actual_buyback_price,
+            )
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    payload = OptionTradeResponse(
+        dte=metrics.dte,
+        spread_width=None if metrics.spread_width is None else _rounded(metrics.spread_width),
+        net_premium=_rounded(metrics.net_premium),
+        capital_at_risk_per_share=_rounded(metrics.capital_at_risk_per_share),
+        return_on_risk=_rounded(metrics.return_on_risk, 11),
+        annualization_multiplier=_rounded(metrics.annualization_multiplier, 8),
+        annualized_return=_rounded(metrics.annualized_return, 10),
+        total_premium=_rounded(metrics.total_premium),
+        total_risk=_rounded(metrics.total_risk),
+        breakeven=_rounded(metrics.breakeven),
+        buyback_target_price=_rounded(metrics.buyback_target_price),
+        realized_annualized_return=(
+            None
+            if metrics.realized_annualized_return is None
+            else _rounded(metrics.realized_annualized_return, 10)
+        ),
+        data_quality=metrics.data_quality,
+        warnings=metrics.warnings,
+    )
+    return payload.model_dump(by_alias=True, mode="json")

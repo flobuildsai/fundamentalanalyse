@@ -16,6 +16,8 @@ const NAV_ITEMS: Array<{ route: AppRoute; label: string }> = [
   { route: "screener", label: "Screener" },
   { route: "regime", label: "Regime" },
   { route: "setups", label: "Setups" },
+  { route: "portfolio", label: "Portfolio" },
+  { route: "options", label: "Optionen" },
   { route: "watchlist", label: "Watchlist" },
 ];
 

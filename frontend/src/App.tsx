@@ -17,6 +17,8 @@ import { LandingPage } from "./components/LandingPage";
 import { AppShell } from "./components/AppShell";
 import { PageHeader } from "./components/PageHeader";
 import { ScreenerPanel } from "./components/ScreenerPanel";
+import { PortfolioPanel } from "./components/PortfolioPanel";
+import { OptionsPanel } from "./components/OptionsPanel";
 import { SyncPanel, type SyncStatus } from "./components/SyncPanel";
 import { loadWorkspace, saveWorkspace } from "./lib/workspace";
 import {
@@ -597,6 +599,26 @@ export default function App() {
               </div>
             </div>
           </section>
+        </div>
+      )}
+
+      {activeRoute === "portfolio" && (
+        <div className="space-y-8">
+          <PageHeader eyebrow="Portfolio" title="Kaufkraft und Exposure kontrollieren">
+            Native Portfolio-Logik für Net Liquidity, Margin-Auslastung, Cash und
+            Underlying-Exposure — ohne Spreadsheet als Datenquelle.
+          </PageHeader>
+          <PortfolioPanel />
+        </div>
+      )}
+
+      {activeRoute === "options" && (
+        <div className="space-y-8">
+          <PageHeader eyebrow="Optionen" title="Options-Setups sauber rechnen">
+            Short Puts, Covered Calls und Spreads bekommen einen eigenen Rechner mit
+            Risiko, Prämie, Break-even und annualisierter Rendite.
+          </PageHeader>
+          <OptionsPanel />
         </div>
       )}
 

@@ -8,6 +8,8 @@ describe("app routing", () => {
     expect(appRouteFromPath("/app/screener")).toBe("screener");
     expect(appRouteFromPath("/app/regime")).toBe("regime");
     expect(appRouteFromPath("/app/setups")).toBe("setups");
+    expect(appRouteFromPath("/app/portfolio")).toBe("portfolio");
+    expect(appRouteFromPath("/app/options")).toBe("options");
     expect(appRouteFromPath("/app/watchlist")).toBe("watchlist");
   });
 
@@ -21,6 +23,8 @@ describe("app routing", () => {
     expect(pathForAppRoute("screener")).toBe("/app/screener");
     expect(pathForAppRoute("regime")).toBe("/app/regime");
     expect(pathForAppRoute("setups")).toBe("/app/setups");
+    expect(pathForAppRoute("portfolio")).toBe("/app/portfolio");
+    expect(pathForAppRoute("options")).toBe("/app/options");
     expect(pathForAppRoute("watchlist")).toBe("/app/watchlist");
   });
 });

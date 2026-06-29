@@ -1,4 +1,6 @@
 import type { Analysis, Assumptions, ApiError } from "../types/analysis";
+import type { OptionTradeMetrics, OptionTradeRequest } from "../types/options";
+import type { PortfolioSummary, PortfolioSummaryRequest } from "../types/portfolio";
 import type { ScreenerParams, ScreenerResponse } from "../types/screener";
 import alcoaMock from "../mocks/alcoa.json";
 
@@ -128,6 +130,45 @@ export async function runSp500Screener(
     throw new AnalyzeError(res.status === 429 ? "rate_limited" : "provider_unavailable");
   }
   return (await res.json()) as ScreenerResponse;
+}
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  if (USE_MOCK) {
+    throw new AnalyzeError("provider_unavailable");
+  }
+
+  let res: Response;
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch {
+    throw new AnalyzeError("provider_unavailable");
+  } finally {
+    window.clearTimeout(timer);
+  }
+
+  if (!res.ok) {
+    throw new AnalyzeError(res.status === 429 ? "rate_limited" : "provider_unavailable");
+  }
+  return (await res.json()) as T;
+}
+
+export async function calculatePortfolioSummary(
+  request: PortfolioSummaryRequest,
+): Promise<PortfolioSummary> {
+  return postJson<PortfolioSummary>("/api/portfolio/summary", request);
+}
+
+export async function calculateOptionTrade(
+  request: OptionTradeRequest,
+): Promise<OptionTradeMetrics> {
+  return postJson<OptionTradeMetrics>("/api/options/calculate", request);
 }
 
 export const isMock = USE_MOCK;
