@@ -12,9 +12,16 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 function intrinsicValue(analysis: Analysis, assumptions: Assumptions): number | null {
-  const futureEPS =
-    analysis.valuation.currentEPS * Math.pow(1 + assumptions.estimatedGrowth, 10);
-  const futurePrice = futureEPS * analysis.valuation.historicalPE;
+  const baseEPS =
+    assumptions.currentEPSOverride && assumptions.currentEPSOverride > 0
+      ? assumptions.currentEPSOverride
+      : analysis.valuation.currentEPS;
+  const exitMultiple =
+    assumptions.exitMultiple && assumptions.exitMultiple > 0
+      ? assumptions.exitMultiple
+      : analysis.valuation.historicalPE;
+  const futureEPS = baseEPS * Math.pow(1 + assumptions.estimatedGrowth, 10);
+  const futurePrice = futureEPS * exitMultiple;
   const discounted = futurePrice / Math.pow(1 + assumptions.requiredReturn, 10);
   return discounted < 0 ? null : discounted;
 }
@@ -34,6 +41,9 @@ export function ScenarioPanel({
         requiredReturn: clamp(assumptions.requiredReturn + 0.03, 0.01, 0.35),
         estimatedGrowth: clamp(assumptions.estimatedGrowth - 0.05, -0.2, 0.5),
         growthSource: assumptions.growthSource,
+        marginOfSafetyTarget: assumptions.marginOfSafetyTarget,
+        exitMultiple: assumptions.exitMultiple,
+        currentEPSOverride: assumptions.currentEPSOverride,
       },
     },
     {
@@ -48,6 +58,9 @@ export function ScenarioPanel({
         requiredReturn: clamp(assumptions.requiredReturn - 0.02, 0.01, 0.35),
         estimatedGrowth: clamp(assumptions.estimatedGrowth + 0.05, -0.2, 0.5),
         growthSource: assumptions.growthSource,
+        marginOfSafetyTarget: assumptions.marginOfSafetyTarget,
+        exitMultiple: assumptions.exitMultiple,
+        currentEPSOverride: assumptions.currentEPSOverride,
       },
     },
   ];

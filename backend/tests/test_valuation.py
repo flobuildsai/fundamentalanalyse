@@ -68,3 +68,29 @@ def test_alcoa_valuation_applies_cyclical_guardrails(alcoa_raw: RawFinancials) -
         5.92,
         6.66,
     ]
+
+
+def test_valuation_accepts_sheet_style_eps_and_exit_multiple_overrides(
+    alcoa_raw: RawFinancials,
+) -> None:
+    valuation = compute_valuation(
+        alcoa_raw,
+        ValuationAssumptions(
+            required_return=0.15,
+            estimated_growth=0.12,
+            margin_of_safety_target=0.30,
+            current_eps_override=10.81,
+            exit_multiple=24.0,
+        ),
+    )
+
+    assert valuation.current_eps == pytest.approx(10.81)
+    assert valuation.historical_pe == pytest.approx(24.0)
+    assert valuation.guardrails.eps_basis == "manual"
+    assert valuation.guardrails.pe_basis == "manual"
+    assert round(valuation.future_eps, 4) == 33.5742
+    assert round(valuation.future_price, 4) == 805.7813
+    assert round(valuation.intrinsic_value or 0, 4) == 199.1768
+    assert round(valuation.target_buy_price or 0, 4) == 139.4238
+    assert round(valuation.expected_annual_return or 0, 4) == 0.3101
+    assert round(valuation.implied_growth or 0, 4) == -0.0169

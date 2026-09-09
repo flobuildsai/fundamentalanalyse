@@ -43,6 +43,9 @@ def _resolve_assumptions(
             required_return=assumptions.required_return,
             estimated_growth=raw.analyst_growth,
             growth_source="analyst",
+            margin_of_safety_target=assumptions.margin_of_safety_target,
+            exit_multiple=assumptions.exit_multiple,
+            current_eps_override=assumptions.current_eps_override,
         )
     return assumptions
 
@@ -57,6 +60,9 @@ def _valuation(value: Valuation) -> schemas.Valuation:
         intrinsic_value=value.intrinsic_value,
         current_price=value.current_price,
         difference=value.difference,
+        target_buy_price=value.target_buy_price,
+        expected_annual_return=value.expected_annual_return,
+        implied_growth=value.implied_growth,
         margin_of_safety=[
             schemas.MarginOfSafetyStep(
                 discount=step.discount,
@@ -479,6 +485,9 @@ def build_analysis(
             required_return=resolved_assumptions.required_return,
             estimated_growth=resolved_assumptions.estimated_growth,
             growth_source=resolved_assumptions.growth_source,
+            margin_of_safety_target=resolved_assumptions.margin_of_safety_target,
+            exit_multiple=resolved_assumptions.exit_multiple,
+            current_eps_override=resolved_assumptions.current_eps_override,
         ),
         growth_estimate=_growth_estimate(raw, resolved_assumptions),
         valuation=_valuation(valuation),

@@ -24,6 +24,7 @@ export interface OptionTradeRequest {
 
 export interface OptionTradeMetrics {
   dte: number;
+  distanceToPricePct: number;
   spreadWidth: number | null;
   netPremium: number;
   capitalAtRiskPerShare: number;
@@ -35,6 +36,16 @@ export interface OptionTradeMetrics {
   breakeven: number;
   buybackTargetPrice: number;
   realizedAnnualizedReturn: number | null;
+  status: "open" | "closed" | "invalid" | string;
   dataQuality: "ok" | "placeholder_or_invalid" | string;
   warnings: string[];
+}
+
+export interface OptionJournalEntry {
+  id: string;
+  request: OptionTradeRequest;
+  metrics: OptionTradeMetrics;
+  createdAt: string;
+  updatedAt: string;
+  source: "local" | "supabase";
 }

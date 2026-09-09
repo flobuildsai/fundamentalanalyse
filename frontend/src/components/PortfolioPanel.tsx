@@ -116,14 +116,14 @@ export function PortfolioPanel() {
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-tertiary)]">
-              Native Portfolio Engine
+              Portfolio
             </p>
             <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]">
-              Kaufkraft, Cash und Exposure ohne Spreadsheet
+              Kaufkraft, Cash und Exposure
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-ink-secondary)]">
-              Die Seite nutzt jetzt unsere eigene Backend-Logik. Das Template ist nur ein Strategy-Fixture;
-              echte Persistenz/Import kommt als nächster DB-Schritt.
+              Aus dem Sheet übernommen: Net Liq, FX, 1,25×/2,0× Kaufkraft,
+              Assetklassen und Basiswert-Exposure.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

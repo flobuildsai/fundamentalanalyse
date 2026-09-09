@@ -592,6 +592,9 @@ async def test_fmp_provider_reuses_cached_raw_data_for_slider_assumption_changes
         "requiredReturn": 0.12,
         "estimatedGrowth": 0.1,
         "growthSource": "manual",
+        "marginOfSafetyTarget": 0.3,
+        "exitMultiple": None,
+        "currentEPSOverride": None,
     }
     assert changed_payload["valuation"]["estimatedGrowth"] == 0.1
     assert changed_payload["valuation"]["futureEPS"] != default_payload["valuation"]["futureEPS"]

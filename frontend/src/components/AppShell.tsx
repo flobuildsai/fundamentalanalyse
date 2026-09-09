@@ -12,17 +12,28 @@ interface AppShellProps {
 }
 
 const TRACK_ITEMS: Array<{ route: AppRoute; label: string; icon: ReactNode }> = [
-  { route: "analysis", label: "Home", icon: <HomeIcon /> },
-  { route: "screener", label: "Screener", icon: <ChartIcon /> },
-  { route: "regime", label: "Risk", icon: <PieIcon /> },
-  { route: "setups", label: "Setups", icon: <BinocularsIcon /> },
-  { route: "portfolio", label: "Portfolio", icon: <BarsIcon /> },
+  { route: "analysis", label: "Analyse", icon: <HomeIcon /> },
+  { route: "watchlist", label: "Watchlist", icon: <ListIcon /> },
 ];
 
 const SERVICE_ITEMS: Array<{ route: AppRoute; label: string; icon: ReactNode }> = [
-  { route: "options", label: "Options", icon: <TrendIcon /> },
-  { route: "watchlist", label: "Watchlist", icon: <ListIcon /> },
+  { route: "options", label: "Optionen", icon: <TrendIcon /> },
 ];
+
+const ROUTE_META: Record<AppRoute, { title: string; detail: string }> = {
+  analysis: {
+    title: "Research Desk",
+    detail: "Fair Value, Qualität und Bilanzrisiko für die aktive Aktie.",
+  },
+  options: {
+    title: "Optionen",
+    detail: "Prämie, Break-even, Risiko und Rendite sauber rechnen.",
+  },
+  watchlist: {
+    title: "Watchlist",
+    detail: "Sortieren, vergleichen, öffnen.",
+  },
+};
 
 function IconFrame({ children }: { children: ReactNode }) {
   return (
@@ -36,41 +47,6 @@ function HomeIcon() {
   return (
     <IconFrame>
       <path d="M4 10.5 12 4l8 6.5V20h-5v-6H9v6H4z" />
-    </IconFrame>
-  );
-}
-
-function ChartIcon() {
-  return (
-    <IconFrame>
-      <path d="M4 19h16M6 16V9m6 7V5m6 11v-5" />
-    </IconFrame>
-  );
-}
-
-function PieIcon() {
-  return (
-    <IconFrame>
-      <path d="M12 4v8l7-3.5A8 8 0 1 1 12 4z" />
-      <path d="M12 12h8" />
-    </IconFrame>
-  );
-}
-
-function BinocularsIcon() {
-  return (
-    <IconFrame>
-      <path d="M6 9h4v9H5a3 3 0 0 1-3-3v-2a4 4 0 0 1 4-4zm8 0h4a4 4 0 0 1 4 4v2a3 3 0 0 1-3 3h-5z" />
-      <path d="M10 9V6h4v3" />
-    </IconFrame>
-  );
-}
-
-function BarsIcon() {
-  return (
-    <IconFrame>
-      <path d="M5 20V10m7 10V4m7 16v-7" />
-      <path d="M3 20h18" />
     </IconFrame>
   );
 }
@@ -95,12 +71,10 @@ function ListIcon() {
 
 function LogoMark() {
   return (
-    <div className="origin-logo-mark" aria-hidden="true">
-      <span />
-      <span />
-      <span />
-      <span />
-    </div>
+    <svg className="origin-logo-mark" viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M16 5 27 26H5Z" />
+      <path d="M16 13 21 23H11Z" />
+    </svg>
   );
 }
 
@@ -139,14 +113,6 @@ function NavGroup({
   );
 }
 
-function TopAction({ label, children, primary = false }: { label: string; children: ReactNode; primary?: boolean }) {
-  return (
-    <button type="button" className={`origin-top-action ${primary ? "primary" : ""}`} aria-label={label}>
-      {children}
-    </button>
-  );
-}
-
 export function AppShell({
   activeRoute,
   onNavigate,
@@ -155,34 +121,31 @@ export function AppShell({
   mockBadge = false,
   children,
 }: AppShellProps) {
+  const routeMeta = ROUTE_META[activeRoute];
+
   return (
     <div className="origin-app-shell">
       <aside className="origin-sidebar">
         <button type="button" onClick={onHome} className="origin-brand" aria-label="Startseite öffnen">
           <LogoMark />
-          <span>DeltaValue</span>
+          <span>Fundamental-Analyst</span>
         </button>
 
         <NavGroup title="Research" items={TRACK_ITEMS} activeRoute={activeRoute} onNavigate={onNavigate} />
         <NavGroup title="Tools" items={SERVICE_ITEMS} activeRoute={activeRoute} onNavigate={onNavigate} />
-
-        <button type="button" className="origin-ai-button">
-          <span>✦</span>
-          <span>Ask anything</span>
-        </button>
       </aside>
 
       <div className="origin-workspace">
         <header className="origin-topbar">
-          <h1>Good afternoon</h1>
+          <div className="origin-topbar-title">
+            <h1>{routeMeta.title}</h1>
+            <p>{routeMeta.detail}</p>
+          </div>
           <div className="origin-topbar-actions">
             {mockBadge && <span className="origin-pill">Demo</span>}
+            <span className="origin-data-pill">FMP Pro</span>
+            <span className="origin-data-pill">SEC</span>
             <div className="origin-sync-control">{syncControls}</div>
-            <TopAction label="Rewards" primary>🎁</TopAction>
-            <TopAction label="Account">♙</TopAction>
-            <TopAction label="Add">＋</TopAction>
-            <TopAction label="Help">?</TopAction>
-            <TopAction label="Settings">⚙</TopAction>
           </div>
         </header>
 

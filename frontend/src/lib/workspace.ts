@@ -42,6 +42,19 @@ export function normalizeAssumptions(
     requiredReturn: candidate.requiredReturn,
     estimatedGrowth: candidate.estimatedGrowth,
     growthSource: isGrowthSource(growthSource) ? growthSource : "analyst",
+    marginOfSafetyTarget:
+      typeof candidate.marginOfSafetyTarget === "number"
+        ? Math.min(Math.max(candidate.marginOfSafetyTarget, 0), 0.9)
+        : 0.3,
+    exitMultiple:
+      typeof candidate.exitMultiple === "number" && candidate.exitMultiple > 0
+        ? candidate.exitMultiple
+        : null,
+    currentEPSOverride:
+      typeof candidate.currentEPSOverride === "number" &&
+      candidate.currentEPSOverride > 0
+        ? candidate.currentEPSOverride
+        : null,
   };
 }
 

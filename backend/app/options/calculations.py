@@ -74,6 +74,7 @@ class OptionTradeMetrics:
     """Computed option trade metrics."""
 
     dte: int
+    distance_to_price_pct: float
     spread_width: float | None
     net_premium: float
     capital_at_risk_per_share: float
@@ -85,6 +86,7 @@ class OptionTradeMetrics:
     breakeven: float
     buyback_target_price: float
     realized_annualized_return: float | None
+    status: Literal["open", "closed", "invalid"]
     data_quality: Literal["ok", "placeholder_or_invalid"]
     warnings: list[str]
 
@@ -111,6 +113,14 @@ def _breakeven(trade: OptionTradeInput, net_premium: float) -> float:
     raise ValueError(f"Unsupported strategy_kind: {trade.strategy_kind}")
 
 
+def _distance_to_price_pct(trade: OptionTradeInput) -> float:
+    if trade.strategy_kind in PUT_STRATEGIES:
+        return (trade.underlying_price - trade.short_strike) / trade.underlying_price
+    if trade.strategy_kind in CALL_STRATEGIES:
+        return (trade.short_strike - trade.underlying_price) / trade.underlying_price
+    raise ValueError(f"Unsupported strategy_kind: {trade.strategy_kind}")
+
+
 def _realized_annualized_return(
     trade: OptionTradeInput,
     capital_at_risk_per_share: float,
@@ -129,6 +139,14 @@ def _realized_annualized_return(
     return (realized_profit_per_share / capital_at_risk_per_share) * (365 / days_held)
 
 
+def _status(trade: OptionTradeInput, realized_return: float | None, warnings: list[str]) -> Literal["open", "closed", "invalid"]:
+    if warnings:
+        return "invalid"
+    if trade.closed_at is not None or trade.actual_buyback_price is not None:
+        return "closed" if realized_return is not None else "invalid"
+    return "open"
+
+
 def calculate_option_trade(trade: OptionTradeInput) -> OptionTradeMetrics:
     """Calculate setup, risk and annualized-return metrics for an option trade."""
 
@@ -145,9 +163,11 @@ def calculate_option_trade(trade: OptionTradeInput) -> OptionTradeMetrics:
     total_risk = capital_at_risk_per_share * trade.contracts * trade.multiplier
     warnings: list[str] = []
     realized_return = _realized_annualized_return(trade, capital_at_risk_per_share, warnings)
+    status = _status(trade, realized_return, warnings)
 
     return OptionTradeMetrics(
         dte=dte,
+        distance_to_price_pct=_distance_to_price_pct(trade),
         spread_width=_spread_width(trade),
         net_premium=net_premium,
         capital_at_risk_per_share=capital_at_risk_per_share,
@@ -159,6 +179,7 @@ def calculate_option_trade(trade: OptionTradeInput) -> OptionTradeMetrics:
         breakeven=_breakeven(trade, net_premium),
         buyback_target_price=trade.premium * trade.buyback_target_pct,
         realized_annualized_return=realized_return,
+        status=status,
         data_quality="placeholder_or_invalid" if warnings else "ok",
         warnings=warnings,
     )

@@ -61,17 +61,111 @@ export function ErrorState({
   );
 }
 
+export function ResearchStartPanel({
+  ticker,
+  loading,
+  errorCode,
+  errorTicker,
+  quickTickers,
+  onSelect,
+}: {
+  ticker: string | null;
+  loading: boolean;
+  errorCode?: string;
+  errorTicker?: string;
+  quickTickers: string[];
+  onSelect: (ticker: string) => void;
+}) {
+  const messages: Record<string, string> = {
+    ticker_not_found: `Keine Daten für ${errorTicker ?? ticker ?? "diesen Ticker"}.`,
+    provider_unavailable: "Datenquelle gerade nicht erreichbar.",
+    rate_limited: "Rate Limit erreicht. Kurz warten.",
+  };
+  const status = errorCode
+    ? messages[errorCode] ?? "Analyse konnte nicht geladen werden."
+    : loading
+      ? `${ticker ?? "Ticker"} wird geladen`
+      : "Ticker eingeben oder Watchlist öffnen";
+  const title = errorCode
+    ? "Daten prüfen"
+    : loading
+      ? "Live-Daten laden"
+      : "Analyse starten";
+
+  return (
+    <section className="research-start-panel" aria-live="polite">
+      <div className="research-start-copy">
+        <p className="origin-eyebrow">Research Status</p>
+        <div className="research-start-heading">
+          <h2>{title}</h2>
+          {ticker && <span>{ticker}</span>}
+        </div>
+        <p>
+          {status}. Bewertung, Qualität, Bilanz und Datenquelle werden in
+          einem fokussierten Score zusammengeführt.
+        </p>
+      </div>
+
+      <div className="research-start-grid">
+        <div>
+          <span>Quelle</span>
+          <strong>FMP Pro / SEC</strong>
+        </div>
+        <div>
+          <span>Historie</span>
+          <strong>10J Reihen</strong>
+        </div>
+        <div>
+          <span>Modell</span>
+          <strong>EPS x KGV</strong>
+        </div>
+      </div>
+
+      <div className="research-start-tickers" aria-label="Schnelle Ticker">
+        {quickTickers.map((item) => (
+          <button key={item} type="button" onClick={() => onSelect(item)}>
+            {item}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function LoadingSkeleton() {
   return (
-    <div className="mt-8 space-y-6">
-      <div className="skeleton-panel h-48 rounded-[var(--radius-card)]" />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-        <div className="skeleton-panel h-72 rounded-[var(--radius-card)]" />
-        <div className="skeleton-panel h-72 rounded-[var(--radius-card)]" />
+    <div className="loading-research-skeleton">
+      <div className="loading-skeleton-title">
+        <div className="skeleton-panel line w-64" />
+        <div className="skeleton-panel line w-28" />
       </div>
-      <div className="grid gap-6 sm:grid-cols-2">
-        <div className="skeleton-panel h-56 rounded-[var(--radius-card)]" />
-        <div className="skeleton-panel h-56 rounded-[var(--radius-card)]" />
+
+      <div className="loading-skeleton-grid">
+        <div className="skeleton-panel loading-card-main">
+          <div className="skeleton-panel pill" />
+          <div className="skeleton-panel number" />
+          <div className="skeleton-panel line w-80" />
+          <div className="loading-skeleton-metrics">
+            <div className="skeleton-panel metric" />
+            <div className="skeleton-panel metric" />
+            <div className="skeleton-panel metric" />
+            <div className="skeleton-panel metric" />
+          </div>
+        </div>
+        <div className="skeleton-panel loading-card-side">
+          <div className="skeleton-panel score" />
+          <div className="skeleton-panel line w-40" />
+          <div className="skeleton-panel line w-56" />
+          <div className="skeleton-panel line w-52" />
+          <div className="skeleton-panel line w-48" />
+        </div>
+      </div>
+
+      <div className="loading-skeleton-mini">
+        <div className="skeleton-panel mini" />
+        <div className="skeleton-panel mini" />
+        <div className="skeleton-panel mini" />
+        <div className="skeleton-panel mini" />
       </div>
     </div>
   );

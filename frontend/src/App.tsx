@@ -16,8 +16,6 @@ import { InvestmentCockpit } from "./components/InvestmentCockpit";
 import { LandingPage } from "./components/LandingPage";
 import { AppShell } from "./components/AppShell";
 import { PageHeader } from "./components/PageHeader";
-import { ScreenerPanel } from "./components/ScreenerPanel";
-import { PortfolioPanel } from "./components/PortfolioPanel";
 import { OptionsPanel } from "./components/OptionsPanel";
 import { SyncPanel, type SyncStatus } from "./components/SyncPanel";
 import { loadWorkspace, saveWorkspace } from "./lib/workspace";
@@ -47,12 +45,15 @@ import {
   DebtSection,
   DividendSection,
 } from "./components/DataSections";
-import { EmptyState, ErrorState, LoadingSkeleton } from "./components/States";
+import { ErrorState, ResearchStartPanel } from "./components/States";
 
 const DEFAULT_ASSUMPTIONS: Assumptions = {
   requiredReturn: 0.15,
   estimatedGrowth: 0.125,
   growthSource: "analyst",
+  marginOfSafetyTarget: 0.3,
+  exitMultiple: null,
+  currentEPSOverride: null,
 };
 const START_TICKER = "AA";
 
@@ -320,11 +321,6 @@ export default function App() {
     }
   }, [assumptionsByTicker, run, watchlist]);
 
-  useEffect(() => {
-    const timer = window.setTimeout(onAnalyzeWatchlist, 450);
-    return () => window.clearTimeout(timer);
-  }, [onAnalyzeWatchlist]);
-
   const onSearch = (ticker: string) => {
     const symbol = ticker.trim().toUpperCase();
     const nextAssumptions = assumptionsByTicker[symbol] ?? DEFAULT_ASSUMPTIONS;
@@ -406,6 +402,17 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
+  useEffect(() => {
+    if (!workspaceOpen) return;
+    const canonicalPath = pathForAppRoute(activeRoute);
+    if (
+      window.location.pathname.startsWith("/app") &&
+      window.location.pathname !== canonicalPath
+    ) {
+      window.history.replaceState(null, "", canonicalPath);
+    }
+  }, [activeRoute, workspaceOpen]);
+
   const openRoute = (route: AppRoute, replace = false) => {
     const path = pathForAppRoute(route);
     if (replace) window.history.replaceState(null, "", path);
@@ -447,15 +454,20 @@ export default function App() {
     />
   );
 
+  const quickTickers = Array.from(new Set([...watchlist, "AA", "AAPL", "MSFT", "NVDA", "TSLA", "KO"])).slice(0, 6);
+
   const analysisDetail = (
-    <div className="mt-8 min-w-0">
-      {loading && !activeAnalysis && <LoadingSkeleton />}
-
-      {error && !activeAnalysis && (
-        <ErrorState code={error.code} ticker={error.ticker} />
+    <div className="mt-5 min-w-0">
+      {!activeAnalysis && (
+        <ResearchStartPanel
+          ticker={selectedTicker}
+          loading={loading}
+          errorCode={error?.code}
+          errorTicker={error?.ticker}
+          quickTickers={quickTickers}
+          onSelect={onSelectTicker}
+        />
       )}
-
-      {!loading && !error && !activeAnalysis && <EmptyState />}
 
       {activeAnalysis && (
         <div className="fade-in space-y-6">
@@ -508,126 +520,53 @@ export default function App() {
     >
       {activeRoute === "analysis" && (
         <>
-          <PageHeader
-            eyebrow="Analyse"
-            title="Fundamental-Analyst"
-            action={<TickerSearch onSearch={onSearch} loading={loading} />}
-          >
-            Innerer Wert, Sicherheitsmarge, Qualität und Bilanzrisiko bleiben in
-            einer fokussierten Einzelaktien-Analyse — ohne Screener-Ballast.
-          </PageHeader>
+          {activeAnalysis ? (
+            <section className="analysis-command-strip">
+              <div>
+                <p className="origin-eyebrow">Analyse</p>
+                <strong>Neue Aktie prüfen</strong>
+              </div>
+              <TickerSearch
+                onSearch={onSearch}
+                loading={loading}
+                placeholder={
+                  loading && selectedTicker
+                    ? `${selectedTicker} wird geladen`
+                    : "Ticker eingeben"
+                }
+              />
+            </section>
+          ) : (
+            <PageHeader
+              eyebrow="Analyse"
+              title="Aktie prüfen"
+              action={
+                <TickerSearch
+                  onSearch={onSearch}
+                  loading={loading}
+                  placeholder={
+                    loading && selectedTicker
+                      ? `${selectedTicker} wird geladen`
+                      : "Ticker eingeben"
+                  }
+                />
+              }
+            >
+              Wert, Qualität und Bilanz in einer ruhigen Ansicht.
+            </PageHeader>
+          )}
           {analysisDetail}
         </>
       )}
 
-      {activeRoute === "screener" && (
-        <div className="space-y-8">
-          <PageHeader eyebrow="Research Screener" title="S&P 500 Chancen finden">
-            Eigene Research-Seite für Ranking, Momentum und Margin-of-Safety. Die
-            Analyse bleibt getrennt; Top-Kandidaten werden später gezielt in die
-            Watchlist oder Setup-Queue übernommen.
-          </PageHeader>
-          <ScreenerPanel
-            onOpenAnalysis={(ticker) => {
-              onSelectTicker(ticker);
-              openRoute("analysis");
-            }}
-            onAddToWatchlist={(ticker) => {
-              run(ticker, assumptionsByTicker[ticker] ?? DEFAULT_ASSUMPTIONS, {
-                select: false,
-              });
-            }}
-          />
-        </div>
-      )}
-
-      {activeRoute === "regime" && (
-        <div className="space-y-8">
-          <PageHeader eyebrow="Risk Gate" title="Marktregime zuerst prüfen">
-            VIX, Trend und später Breadth/Credit-Spreads bekommen eine eigene
-            ruhige Seite, damit Entry-Entscheidungen nicht im Analyse-Screen
-            untergehen.
-          </PageHeader>
-          <section className="grid gap-5 lg:grid-cols-3">
-            {[
-              ["VIX Gate", "<20 normal", "20–30 reduzierte Größe, >30 keine neuen Entries."],
-              ["Sizing", "60% bei Stress", "Positionsgrößen werden später automatisch angepasst."],
-              ["Breadth", "kommt später", "Market Breadth und Credit-Spreads als zweite Risikoschicht."],
-            ].map(([label, value, detail]) => (
-              <article key={label} className="card p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-tertiary)]">
-                  {label}
-                </p>
-                <h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]">
-                  {value}
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-[var(--color-ink-secondary)]">
-                  {detail}
-                </p>
-              </article>
-            ))}
-          </section>
-        </div>
-      )}
-
-      {activeRoute === "setups" && (
-        <div className="space-y-8">
-          <PageHeader eyebrow="Trade Setup Queue" title="Aus Research wird Setup">
-            Hier landen später nur ausgewählte Kandidaten mit Entry, Stop, Target,
-            Shares, Dollar-Risiko, Portfolio-Prozent und R/R — getrennt von der
-            Fundamental-Analyse.
-          </PageHeader>
-          <section className="glass-strong rounded-[2rem] p-6 sm:p-8">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-[1.5rem] bg-white/40 p-5 ring-1 ring-white/60">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-tertiary)]">
-                  Long Setup Format
-                </p>
-                <p className="mt-3 text-sm leading-7 text-[var(--color-ink-secondary)]">
-                  Ticker · Entry · Stop · Target · Shares · $ Risk · % Portfolio · R/R ·
-                  Catalysts/Earnings.
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] bg-white/40 p-5 ring-1 ring-white/60">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-tertiary)]">
-                  Risk Rules
-                </p>
-                <p className="mt-3 text-sm leading-7 text-[var(--color-ink-secondary)]">
-                  1–3% Risiko, 5% Hard Cap, 2× ATR Stop und VIX-Gate. Shorts bleiben
-                  zunächst Research-only.
-                </p>
-              </div>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {activeRoute === "portfolio" && (
-        <div className="space-y-8">
-          <PageHeader eyebrow="Portfolio" title="Kaufkraft und Exposure kontrollieren">
-            Native Portfolio-Logik für Net Liquidity, Margin-Auslastung, Cash und
-            Underlying-Exposure — ohne Spreadsheet als Datenquelle.
-          </PageHeader>
-          <PortfolioPanel />
-        </div>
-      )}
-
       {activeRoute === "options" && (
-        <div className="space-y-8">
-          <PageHeader eyebrow="Optionen" title="Options-Setups sauber rechnen">
-            Short Puts, Covered Calls und Spreads bekommen einen eigenen Rechner mit
-            Risiko, Prämie, Break-even und annualisierter Rendite.
-          </PageHeader>
-          <OptionsPanel />
+        <div className="space-y-6">
+          <OptionsPanel user={syncUser} />
         </div>
       )}
 
       {activeRoute === "watchlist" && (
-        <div className="space-y-8">
-          <PageHeader eyebrow="Workspace" title="Watchlist, Notizen und Snapshots">
-            Deine gespeicherten Ticker bleiben als eigene Arbeitsfläche getrennt
-            vom Screener. Von hier öffnest du gezielt die Einzelanalyse.
-          </PageHeader>
+        <div className="space-y-6">
           <WatchlistPanel
             tickers={watchlist}
             analyses={analyses}

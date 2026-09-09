@@ -45,7 +45,7 @@ export function ValuationHero({ valuation: v, currency }: Props) {
         )}
       </div>
 
-      <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
         <Field label="Aktueller Kurs" value={money(v.currentPrice, currency)} />
         <Field label={epsLabel} value={money(v.currentEPS, currency)} />
         <Field label={peLabel} value={`${v.historicalPE.toLocaleString("de-DE", {
@@ -53,6 +53,8 @@ export function ValuationHero({ valuation: v, currency }: Props) {
         })}×`} />
         <Field label="eEPS (in 10J)" value={money(v.futureEPS, currency)} />
         <Field label="Kurs in 10J" value={money(v.futurePrice, currency)} />
+        <Field label="Zielkaufpreis" value={money(v.targetBuyPrice, currency)} />
+        <Field label="Modellrendite" value={pct(v.expectedAnnualReturn)} />
       </div>
     </div>
   );

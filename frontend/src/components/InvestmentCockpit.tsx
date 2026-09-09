@@ -85,12 +85,12 @@ function ScoreRing({ score }: { score: number }) {
     <div
       className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full p-1.5"
       style={{
-        background: `conic-gradient(${color} ${score * 3.6}deg, rgba(17,19,24,0.08) 0deg)`,
+        background: `conic-gradient(${color} ${score * 3.6}deg, rgba(255,255,255,0.14) 0deg)`,
       }}
       aria-label={`Decision Score ${score} von 100`}
     >
-      <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white/74 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-        <span className="tnum text-3xl font-semibold leading-none text-[var(--color-ink)]">
+      <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-[rgba(16,18,17,0.94)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+        <span className="text-3xl font-semibold leading-none text-[var(--color-ink)]">
           {score}
         </span>
         <span className="mt-0.5 text-[10px] font-semibold uppercase text-[var(--color-ink-tertiary)]">
@@ -118,15 +118,15 @@ export function InvestmentCockpit({ analysis }: { analysis: Analysis }) {
   const visibleReasons = decision.reasons.slice(0, 4);
 
   return (
-    <section className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
+    <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
       <article
         className="glass-strong relative overflow-hidden rounded-[2rem] p-6 sm:p-8"
         style={{
           backgroundImage: hasValue
-            ? `linear-gradient(135deg, rgba(255,255,255,0.86), rgba(255,255,255,0.48)), radial-gradient(80% 72% at 100% 0%, ${
+            ? `linear-gradient(135deg, rgba(24,26,24,0.96), rgba(12,13,12,0.94)), radial-gradient(80% 72% at 100% 0%, ${
                 undervalued
-                  ? "rgba(47,191,113,0.16)"
-                  : "rgba(255,69,58,0.13)"
+                  ? "rgba(61,127,82,0.22)"
+                  : "rgba(255,69,58,0.18)"
               } 0%, rgba(255,255,255,0) 66%)`
             : undefined,
         }}

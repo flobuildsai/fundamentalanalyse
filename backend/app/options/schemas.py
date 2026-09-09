@@ -29,6 +29,7 @@ class OptionTradeRequest(ContractModel):
 
 class OptionTradeResponse(ContractModel):
     dte: int
+    distance_to_price_pct: float
     spread_width: float | None
     net_premium: float
     capital_at_risk_per_share: float
@@ -40,5 +41,6 @@ class OptionTradeResponse(ContractModel):
     breakeven: float
     buyback_target_price: float
     realized_annualized_return: float | None
+    status: str
     data_quality: str
     warnings: list[str]

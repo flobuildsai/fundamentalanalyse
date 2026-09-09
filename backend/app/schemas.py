@@ -13,8 +13,8 @@ ProvenanceValue = Literal["reported", "computed", "estimated", "unavailable"]
 GrowthSource = Literal["manual", "zacks", "analyst"]
 GuardrailSeverity = Literal["info", "warning", "danger"]
 Confidence = Literal["high", "medium", "low"]
-EpsBasis = Literal["latest", "normalized", "unavailable"]
-PeBasis = Literal["historical", "capped", "cyclical_cap", "unavailable"]
+EpsBasis = Literal["latest", "normalized", "manual", "unavailable"]
+PeBasis = Literal["historical", "manual", "capped", "cyclical_cap", "unavailable"]
 DecisionRating = Literal["prime", "watch", "neutral", "avoid", "incomplete"]
 DecisionSignal = Literal["strong", "ok", "weak", "unknown"]
 
@@ -81,6 +81,9 @@ class Valuation(ContractModel):
     intrinsic_value: float | None
     current_price: float
     difference: float | None
+    target_buy_price: float | None
+    expected_annual_return: float | None
+    implied_growth: float | None
     margin_of_safety: list[MarginOfSafetyStep]
     guardrails: ValuationGuardrails
 
@@ -89,6 +92,9 @@ class Assumptions(ContractModel):
     required_return: float
     estimated_growth: float
     growth_source: GrowthSource = "analyst"
+    margin_of_safety_target: float = 0.30
+    exit_multiple: float | None = None
+    current_eps_override: float | None = Field(default=None, alias="currentEPSOverride")
 
 
 class GrowthEstimate(ContractModel):

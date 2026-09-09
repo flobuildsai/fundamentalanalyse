@@ -52,6 +52,12 @@ export interface Valuation {
   currentPrice: number;
   /** 1 − Kurs/innererWert. >0 = unterbewertet (Upside). null wenn nicht berechenbar. */
   difference: number | null;
+  /** Zielkaufpreis auf Basis der frei wählbaren Sicherheitsmarge. */
+  targetBuyPrice: number | null;
+  /** Erwartete jährliche Rendite bis zum modellierten Kurs in 10 Jahren. */
+  expectedAnnualReturn: number | null;
+  /** Wachstum, das der aktuelle Kurs bei Renditeforderung und Exit-KGV einpreist. */
+  impliedGrowth: number | null;
   marginOfSafety: MarginOfSafetyStep[];
   guardrails: ValuationGuardrails;
 }
@@ -60,6 +66,9 @@ export interface Assumptions {
   requiredReturn: number;
   estimatedGrowth: number;
   growthSource: GrowthSource;
+  marginOfSafetyTarget: number;
+  exitMultiple?: number | null;
+  currentEPSOverride?: number | null;
 }
 
 export interface GrowthEstimate {
@@ -80,8 +89,8 @@ export interface ValuationWarning {
 export interface ValuationGuardrails {
   confidence: Confidence;
   isCyclical: boolean;
-  epsBasis: "latest" | "normalized" | "unavailable";
-  peBasis: "historical" | "capped" | "cyclical_cap" | "unavailable";
+  epsBasis: "latest" | "normalized" | "manual" | "unavailable";
+  peBasis: "historical" | "manual" | "capped" | "cyclical_cap" | "unavailable";
   normalizedEPS: number | null;
   normalizedFcfPerShare: number | null;
   rawHistoricalPE: number;

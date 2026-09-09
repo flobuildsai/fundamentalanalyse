@@ -51,8 +51,57 @@ function Slider({
   );
 }
 
+function NumericInput({
+  label,
+  suffix,
+  value,
+  placeholder,
+  min,
+  max,
+  step,
+  onChange,
+}: {
+  label: string;
+  suffix?: string;
+  value: number | null | undefined;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  onChange: (value: number | null) => void;
+}) {
+  return (
+    <label className="glass-soft flex min-h-16 items-center justify-between gap-3 rounded-2xl px-4 py-3">
+      <span className="text-xs font-medium leading-tight text-[var(--color-ink-tertiary)]">
+        {label}
+      </span>
+      <span className="flex min-w-24 items-center justify-end gap-1">
+        <input
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={value ?? ""}
+          placeholder={placeholder}
+          onChange={(event) => {
+            const raw = event.target.value;
+            onChange(raw === "" ? null : Number(raw));
+          }}
+          className="tnum w-20 bg-transparent text-right text-sm font-semibold text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-tertiary)]"
+        />
+        {suffix && (
+          <span className="text-xs font-semibold text-[var(--color-ink-tertiary)]">
+            {suffix}
+          </span>
+        )}
+      </span>
+    </label>
+  );
+}
+
 export function AssumptionControls({ value, analysis, onChange }: Props) {
   const growthPercent = Number((value.estimatedGrowth * 100).toFixed(1));
+  const marginTargetPercent = Number((value.marginOfSafetyTarget * 100).toFixed(0));
   const analystGrowth = analysis?.growthEstimate?.estimatedGrowth ?? null;
 
   return (
@@ -133,6 +182,65 @@ export function AssumptionControls({ value, analysis, onChange }: Props) {
           />
         </label>
       </div>
+      <div className="mt-3 grid gap-3 lg:grid-cols-3">
+        <NumericInput
+          label="Ziel-Sicherheitsmarge"
+          suffix="%"
+          min={0}
+          max={90}
+          step={5}
+          value={marginTargetPercent}
+          onChange={(nextValue) =>
+            onChange({
+              ...value,
+              marginOfSafetyTarget:
+                nextValue === null ? 0.3 : Math.min(Math.max(nextValue / 100, 0), 0.9),
+            })
+          }
+        />
+        <NumericInput
+          label="EPS Override"
+          value={value.currentEPSOverride}
+          placeholder={
+            analysis?.valuation.currentEPS
+              ? analysis.valuation.currentEPS.toLocaleString("de-DE", {
+                  maximumFractionDigits: 2,
+                })
+              : "auto"
+          }
+          min={0}
+          step={0.01}
+          onChange={(currentEPSOverride) =>
+            onChange({
+              ...value,
+              currentEPSOverride:
+                currentEPSOverride !== null && currentEPSOverride > 0
+                  ? currentEPSOverride
+                  : null,
+            })
+          }
+        />
+        <NumericInput
+          label="Exit-KGV"
+          value={value.exitMultiple}
+          placeholder={
+            analysis?.valuation.historicalPE
+              ? analysis.valuation.historicalPE.toLocaleString("de-DE", {
+                  maximumFractionDigits: 1,
+                })
+              : "auto"
+          }
+          min={0}
+          step={0.5}
+          onChange={(exitMultiple) =>
+            onChange({
+              ...value,
+              exitMultiple:
+                exitMultiple !== null && exitMultiple > 0 ? exitMultiple : null,
+            })
+          }
+        />
+      </div>
       <div className="mt-3 rounded-2xl bg-white/28 px-4 py-3 text-xs leading-5 text-[var(--color-ink-secondary)] ring-1 ring-white/46">
         {analystGrowth !== null ? (
           <>
@@ -147,6 +255,17 @@ export function AssumptionControls({ value, analysis, onChange }: Props) {
         ) : (
           "Kein belastbarer Analystenwert verfügbar; nutze manuelle Annahmen."
         )}
+        {analysis?.valuation.impliedGrowth !== null &&
+          analysis?.valuation.impliedGrowth !== undefined && (
+            <>
+              {" "}
+              Implizites Wachstum im Kurs:{" "}
+              <span className="tnum font-semibold text-[var(--color-ink)]">
+                {pct(analysis.valuation.impliedGrowth)}
+              </span>
+              .
+            </>
+          )}
       </div>
     </section>
   );

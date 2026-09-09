@@ -1,5 +1,5 @@
 import type { Valuation } from "../types/analysis";
-import { money } from "../lib/format";
+import { money, pct } from "../lib/format";
 
 interface Props {
   valuation: Valuation;
@@ -65,6 +65,12 @@ export function MarginOfSafetyBar({ valuation: v, currency }: Props) {
           : v.currentPrice <= steps[4].price
             ? "innerhalb der Sicherheitszone."
             : "über allen Sicherheitsstufen."}
+        {v.targetBuyPrice !== null
+          ? ` Zielkaufpreis ${money(v.targetBuyPrice, currency)}.`
+          : ""}
+        {v.impliedGrowth !== null
+          ? ` Eingepreistes Wachstum ${pct(v.impliedGrowth)}.`
+          : ""}
       </p>
     </section>
   );

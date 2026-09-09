@@ -67,6 +67,7 @@ def test_option_calculate_endpoint_returns_native_strategy_metrics() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["dte"] == 30
+    assert payload["distanceToPricePct"] == 0.0287916288
     assert payload["netPremium"] == 4.13
     assert payload["capitalAtRiskPerShare"] == 305.87
     assert payload["returnOnRisk"] == 0.01350246837
@@ -74,6 +75,7 @@ def test_option_calculate_endpoint_returns_native_strategy_metrics() -> None:
     assert payload["totalPremium"] == 413
     assert payload["totalRisk"] == 30_587
     assert payload["breakeven"] == 305.87
+    assert payload["status"] == "open"
     assert payload["dataQuality"] == "ok"
 
 
@@ -97,5 +99,6 @@ def test_option_calculate_endpoint_marks_dirty_close_data() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["dataQuality"] == "placeholder_or_invalid"
+    assert payload["status"] == "invalid"
     assert payload["realizedAnnualizedReturn"] is None
     assert "closed_at_before_opened_at" in payload["warnings"]

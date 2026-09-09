@@ -84,6 +84,9 @@ async def analyze_ticker(
     required_return: float = Query(0.15, alias="requiredReturn", gt=-1),
     estimated_growth: float = Query(0.125, alias="estimatedGrowth"),
     growth_source: GrowthSource = Query("analyst", alias="growthSource"),
+    margin_of_safety_target: float = Query(0.30, alias="marginOfSafetyTarget", ge=0, le=0.90),
+    exit_multiple: float | None = Query(None, alias="exitMultiple", gt=0),
+    current_eps_override: float | None = Query(None, alias="currentEPSOverride", gt=0),
     provider: FinancialDataProvider = Depends(get_provider),
     raw_cache: RawFinancialsCache = Depends(get_raw_cache),
 ) -> dict[str, object] | JSONResponse:
@@ -94,6 +97,9 @@ async def analyze_ticker(
         required_return=required_return,
         estimated_growth=estimated_growth,
         growth_source=growth_source,
+        margin_of_safety_target=margin_of_safety_target,
+        exit_multiple=exit_multiple,
+        current_eps_override=current_eps_override,
     )
     try:
         raw, cached = await raw_cache.get_or_fetch(
@@ -231,6 +237,7 @@ async def options_calculate(request: OptionTradeRequest) -> dict[str, object]:
 
     payload = OptionTradeResponse(
         dte=metrics.dte,
+        distance_to_price_pct=_rounded(metrics.distance_to_price_pct, 10),
         spread_width=None if metrics.spread_width is None else _rounded(metrics.spread_width),
         net_premium=_rounded(metrics.net_premium),
         capital_at_risk_per_share=_rounded(metrics.capital_at_risk_per_share),
@@ -246,6 +253,7 @@ async def options_calculate(request: OptionTradeRequest) -> dict[str, object]:
             if metrics.realized_annualized_return is None
             else _rounded(metrics.realized_annualized_return, 10)
         ),
+        status=metrics.status,
         data_quality=metrics.data_quality,
         warnings=metrics.warnings,
     )

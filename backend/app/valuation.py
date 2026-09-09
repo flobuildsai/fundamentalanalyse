@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from math import isfinite, nan, pow
 from typing import Literal, TypeVar
@@ -13,8 +13,8 @@ ProvenanceValue = Literal["reported", "computed", "estimated", "unavailable"]
 GrowthSource = Literal["manual", "zacks", "analyst"]
 GuardrailSeverity = Literal["info", "warning", "danger"]
 Confidence = Literal["high", "medium", "low"]
-EpsBasis = Literal["latest", "normalized", "unavailable"]
-PeBasis = Literal["historical", "capped", "cyclical_cap", "unavailable"]
+EpsBasis = Literal["latest", "normalized", "manual", "unavailable"]
+PeBasis = Literal["historical", "manual", "capped", "cyclical_cap", "unavailable"]
 T = TypeVar("T")
 
 
@@ -33,6 +33,9 @@ class ValuationAssumptions:
     required_return: float = 0.15
     estimated_growth: float = 0.125
     growth_source: GrowthSource = "analyst"
+    margin_of_safety_target: float = 0.30
+    exit_multiple: float | None = None
+    current_eps_override: float | None = None
 
 
 DEFAULT_ASSUMPTIONS = ValuationAssumptions()
@@ -148,6 +151,9 @@ class Valuation:
     intrinsic_value: float | None
     current_price: float
     difference: float | None
+    target_buy_price: float | None
+    expected_annual_return: float | None
+    implied_growth: float | None
     margin_of_safety: list[MarginOfSafetyStep]
     guardrails: ValuationGuardrails
 
@@ -226,6 +232,12 @@ def _finite_positive(value: float | None) -> float | None:
     if value is None or not isfinite(value) or value <= 0:
         return None
     return value
+
+
+def _bounded_margin_target(value: float) -> float:
+    if not isfinite(value):
+        return 0.30
+    return min(max(value, 0.0), 0.90)
 
 
 def _last_values(series: list[YearPoint], years: int) -> list[float]:
@@ -417,6 +429,41 @@ def compute_valuation(
     estimated_growth = assumptions.estimated_growth
     current_eps, historical_pe, guardrails = _build_guardrails(input_data)
 
+    eps_override = _finite_positive(assumptions.current_eps_override)
+    if eps_override is not None:
+        current_eps = eps_override
+        guardrails = replace(
+            guardrails,
+            eps_basis="manual",
+            warnings=[
+                *guardrails.warnings,
+                ValuationWarning(
+                    code="manual_eps_override",
+                    severity="info",
+                    title="EPS manuell überschrieben",
+                    detail="Die Bewertung nutzt ein manuell gesetztes EPS wie im Sheet-Override.",
+                ),
+            ],
+        )
+
+    exit_multiple = _finite_positive(assumptions.exit_multiple)
+    if exit_multiple is not None:
+        historical_pe = exit_multiple
+        guardrails = replace(
+            guardrails,
+            pe_basis="manual",
+            effective_pe=exit_multiple,
+            warnings=[
+                *guardrails.warnings,
+                ValuationWarning(
+                    code="manual_exit_multiple",
+                    severity="info",
+                    title="Exit-Multiple manuell überschrieben",
+                    detail="Die Bewertung nutzt ein manuell gesetztes KGV in 10 Jahren.",
+                ),
+            ],
+        )
+
     future_eps = current_eps * pow(1 + estimated_growth, 10)
     future_price = future_eps * historical_pe
 
@@ -426,6 +473,27 @@ def compute_valuation(
     difference: float | None = None
     if intrinsic_value is not None and intrinsic_value != 0:
         difference = 1 - input_data.current_price / intrinsic_value
+
+    margin_target = _bounded_margin_target(assumptions.margin_of_safety_target)
+    target_buy_price = (
+        None if intrinsic_value is None else intrinsic_value * (1 - margin_target)
+    )
+    expected_annual_return = (
+        pow(future_price / input_data.current_price, 1 / 10) - 1
+        if input_data.current_price > 0 and future_price > 0
+        else None
+    )
+    implied_growth_base = (
+        (input_data.current_price * pow(1 + required_return, 10))
+        / (historical_pe * current_eps)
+        if historical_pe > 0 and current_eps > 0
+        else None
+    )
+    implied_growth = (
+        pow(implied_growth_base, 1 / 10) - 1
+        if implied_growth_base is not None and implied_growth_base > 0
+        else None
+    )
 
     margin_of_safety = [
         MarginOfSafetyStep(
@@ -444,6 +512,9 @@ def compute_valuation(
         intrinsic_value=intrinsic_value,
         current_price=input_data.current_price,
         difference=difference,
+        target_buy_price=target_buy_price,
+        expected_annual_return=expected_annual_return,
+        implied_growth=implied_growth,
         margin_of_safety=margin_of_safety,
         guardrails=guardrails,
     )

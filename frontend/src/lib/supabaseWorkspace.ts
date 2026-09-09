@@ -69,6 +69,9 @@ function rowToAssumptions(row: AssumptionRow): Assumptions | null {
     requiredReturn,
     estimatedGrowth,
     growthSource: isGrowthSource(row.growth_source) ? row.growth_source : "analyst",
+    marginOfSafetyTarget: 0.3,
+    exitMultiple: null,
+    currentEPSOverride: null,
   };
 }
 
@@ -122,7 +125,7 @@ export async function signOutFromSupabase(): Promise<void> {
   if (error) throw error;
 }
 
-async function ensureDefaultWorkspace(user: User): Promise<string> {
+export async function ensureDefaultWorkspace(user: User): Promise<string> {
   const supabase = assertSupabase();
   const existing = await supabase
     .from("workspaces")

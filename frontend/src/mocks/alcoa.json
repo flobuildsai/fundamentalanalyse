@@ -61,7 +61,14 @@
     "fcf": [484, -715, 819, 49, 307, 41, 530, 342, -440, 42, 567],
     "netIncome": [-863, -400, 279, 250, -1125, -170, 429, -123, -651, 60, 1157]
   },
-  "assumptions": { "requiredReturn": 0.15, "estimatedGrowth": 0.125, "growthSource": "analyst" },
+  "assumptions": {
+    "requiredReturn": 0.15,
+    "estimatedGrowth": 0.125,
+    "growthSource": "analyst",
+    "marginOfSafetyTarget": 0.3,
+    "exitMultiple": null,
+    "currentEPSOverride": null
+  },
   "valuation": {
     "currentEPS": 0.512,
     "estimatedGrowth": 0.125,
@@ -71,6 +78,9 @@
     "intrinsicValue": 7.3976,
     "currentPrice": 54.1,
     "difference": -6.3132,
+    "targetBuyPrice": 5.1783,
+    "expectedAnnualReturn": -0.0575,
+    "impliedGrowth": 0.3727,
     "marginOfSafety": [
       { "discount": 0.5, "price": 3.6988 },
       { "discount": 0.4, "price": 4.4385 },

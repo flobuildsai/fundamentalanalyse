@@ -91,6 +91,9 @@ def test_analyze_recomputes_valuation_from_query_assumptions(alcoa_raw: RawFinan
         "requiredReturn": 0.12,
         "estimatedGrowth": 0.1,
         "growthSource": "analyst",
+        "marginOfSafetyTarget": 0.3,
+        "exitMultiple": None,
+        "currentEPSOverride": None,
     }
     assert payload["valuation"]["estimatedGrowth"] == 0.1
     assert round(payload["valuation"]["futureEPS"], 4) == 1.328
@@ -108,6 +111,34 @@ def test_analyze_preserves_growth_source_query(alcoa_raw: RawFinancials) -> None
 
     assert response.status_code == 200
     assert response.json()["assumptions"]["growthSource"] == "manual"
+
+
+def test_analyze_accepts_value_sheet_override_query_params(
+    alcoa_raw: RawFinancials,
+) -> None:
+    client = _client(StubProvider(raw=alcoa_raw))
+    try:
+        response = client.get(
+            "/api/analyze/AA",
+            params={
+                "requiredReturn": "0.15",
+                "estimatedGrowth": "0.12",
+                "marginOfSafetyTarget": "0.30",
+                "currentEPSOverride": "10.81",
+                "exitMultiple": "24",
+            },
+        )
+    finally:
+        _cleanup_overrides()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["assumptions"]["currentEPSOverride"] == 10.81
+    assert payload["assumptions"]["exitMultiple"] == 24
+    assert payload["valuation"]["guardrails"]["epsBasis"] == "manual"
+    assert payload["valuation"]["guardrails"]["peBasis"] == "manual"
+    assert round(payload["valuation"]["targetBuyPrice"], 4) == 139.4238
+    assert round(payload["valuation"]["impliedGrowth"], 4) == -0.0169
 
 
 def test_ticker_not_found_error_shape() -> None:
@@ -205,6 +236,9 @@ def test_analyze_recomputes_slider_assumptions_from_cached_raw_data(
         "requiredReturn": 0.12,
         "estimatedGrowth": 0.1,
         "growthSource": "analyst",
+        "marginOfSafetyTarget": 0.3,
+        "exitMultiple": None,
+        "currentEPSOverride": None,
     }
     assert second_payload["valuation"]["futureEPS"] != first_payload["valuation"]["futureEPS"]
 

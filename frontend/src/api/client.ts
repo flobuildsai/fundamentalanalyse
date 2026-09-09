@@ -22,8 +22,12 @@ export class AnalyzeError extends Error {
 /** Recompute valuation client-side from a base analysis (used for live slider feedback on the mock). */
 function rescale(base: Analysis, a: Assumptions): Analysis {
   const { requiredReturn: r, estimatedGrowth: g } = a;
-  const eps = base.valuation.currentEPS;
-  const pe = base.valuation.historicalPE;
+  const eps = a.currentEPSOverride && a.currentEPSOverride > 0
+    ? a.currentEPSOverride
+    : base.valuation.currentEPS;
+  const pe = a.exitMultiple && a.exitMultiple > 0
+    ? a.exitMultiple
+    : base.valuation.guardrails.effectivePE;
   const futureEPS = eps * Math.pow(1 + g, 10);
   const futurePrice = futureEPS * pe;
   const discounted = futurePrice / Math.pow(1 + r, 10);
@@ -31,6 +35,20 @@ function rescale(base: Analysis, a: Assumptions): Analysis {
   const difference =
     intrinsicValue && intrinsicValue !== 0
       ? 1 - base.currentPrice / intrinsicValue
+      : null;
+  const targetBuyPrice =
+    intrinsicValue === null ? null : intrinsicValue * (1 - a.marginOfSafetyTarget);
+  const expectedAnnualReturn =
+    base.currentPrice > 0 && futurePrice > 0
+      ? Math.pow(futurePrice / base.currentPrice, 1 / 10) - 1
+      : null;
+  const impliedGrowthBase =
+    pe > 0 && eps > 0
+      ? (base.currentPrice * Math.pow(1 + r, 10)) / (pe * eps)
+      : null;
+  const impliedGrowth =
+    impliedGrowthBase !== null && impliedGrowthBase > 0
+      ? Math.pow(impliedGrowthBase, 1 / 10) - 1
       : null;
   const marginOfSafety = [0.5, 0.4, 0.3, 0.2, 0.1].map((discount) => ({
     discount,
@@ -42,11 +60,21 @@ function rescale(base: Analysis, a: Assumptions): Analysis {
     valuation: {
       ...base.valuation,
       estimatedGrowth: g,
+      historicalPE: pe,
       futureEPS,
       futurePrice,
       intrinsicValue,
       difference,
+      targetBuyPrice,
+      expectedAnnualReturn,
+      impliedGrowth,
       marginOfSafety,
+      guardrails: {
+        ...base.valuation.guardrails,
+        epsBasis: a.currentEPSOverride ? "manual" : base.valuation.guardrails.epsBasis,
+        peBasis: a.exitMultiple ? "manual" : base.valuation.guardrails.peBasis,
+        effectivePE: pe,
+      },
     },
   };
 }
@@ -73,6 +101,13 @@ export async function analyze(
     params.set("requiredReturn", String(assumptions.requiredReturn));
     params.set("estimatedGrowth", String(assumptions.estimatedGrowth));
     params.set("growthSource", assumptions.growthSource);
+    params.set("marginOfSafetyTarget", String(assumptions.marginOfSafetyTarget));
+    if (assumptions.exitMultiple && assumptions.exitMultiple > 0) {
+      params.set("exitMultiple", String(assumptions.exitMultiple));
+    }
+    if (assumptions.currentEPSOverride && assumptions.currentEPSOverride > 0) {
+      params.set("currentEPSOverride", String(assumptions.currentEPSOverride));
+    }
   }
   const qs = params.toString();
   const url = `${API_BASE}/api/analyze/${encodeURIComponent(t)}${qs ? `?${qs}` : ""}`;

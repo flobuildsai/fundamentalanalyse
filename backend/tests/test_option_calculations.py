@@ -25,6 +25,7 @@ def test_calculates_cash_secured_put_metrics_without_spreadsheet_dependency() ->
     result = calculate_option_trade(trade)
 
     assert result.dte == 30
+    assert result.distance_to_price_pct == pytest.approx(0.0287916288)
     assert result.net_premium == pytest.approx(4.13)
     assert result.capital_at_risk_per_share == pytest.approx(305.87)
     assert result.return_on_risk == pytest.approx(0.01350246837)
@@ -34,6 +35,7 @@ def test_calculates_cash_secured_put_metrics_without_spreadsheet_dependency() ->
     assert result.total_risk == pytest.approx(30_587)
     assert result.breakeven == pytest.approx(305.87)
     assert result.buyback_target_price == pytest.approx(0.83)
+    assert result.status == "open"
     assert result.data_quality == "ok"
 
 
@@ -78,6 +80,29 @@ def test_calculates_vertical_spread_metrics() -> None:
     assert bear_call.breakeven == pytest.approx(330.68)
     assert bear_call.total_premium == pytest.approx(68)
     assert bear_call.total_risk == pytest.approx(932)
+    assert bull_put.distance_to_price_pct == pytest.approx(0.0287916288)
+    assert bear_call.distance_to_price_pct == pytest.approx(0.0338669758)
+
+
+def test_calculates_realized_return_for_valid_closed_trade() -> None:
+    result = calculate_option_trade(
+        OptionTradeInput(
+            strategy_kind="cash_secured_put",
+            underlying="V",
+            opened_at=date(2026, 5, 6),
+            expiry=date(2026, 6, 5),
+            underlying_price=319.19,
+            short_strike=310,
+            premium=4.15,
+            fees=0.02,
+            closed_at=date(2026, 5, 20),
+            actual_buyback_price=0.83,
+        )
+    )
+
+    assert result.status == "closed"
+    assert result.data_quality == "ok"
+    assert result.realized_annualized_return == pytest.approx(0.2812819639)
 
 
 def test_marks_placeholder_close_dates_without_trusting_dirty_history() -> None:
@@ -97,6 +122,7 @@ def test_marks_placeholder_close_dates_without_trusting_dirty_history() -> None:
     )
 
     assert result.data_quality == "placeholder_or_invalid"
+    assert result.status == "invalid"
     assert "closed_at_before_opened_at" in result.warnings
     assert result.realized_annualized_return is None
 
